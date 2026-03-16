@@ -193,6 +193,16 @@ export default function Navbar() {
             }
         };
         fetchUserAndStore();
+
+        // 대표 매장 변경 이벤트 리스너 등록
+        const handleDefaultStoreChanged = () => {
+            fetchUserAndStore();
+        };
+        window.addEventListener('defaultStoreChanged', handleDefaultStoreChanged);
+
+        return () => {
+            window.removeEventListener('defaultStoreChanged', handleDefaultStoreChanged);
+        };
     }, []);
 
     const profileOpen = openMenu === "profile";

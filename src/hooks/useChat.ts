@@ -149,11 +149,19 @@ export const useChat = () => {
   // 메시지 전송
   const sendChatMessage = useCallback(
     (content: string) => {
+      console.log('[useChat] sendChatMessage called:', {
+        selectedThreadId,
+        contentLength: content?.length,
+        connectionStatus
+      });
+
       if (!selectedThreadId || !content.trim()) {
+        console.warn('[useChat] Cannot send message - no thread selected or empty content');
         return;
       }
 
       const clientMessageId = `client-${Date.now()}-${Math.random()}`;
+      console.log('[useChat] Generated clientMessageId:', clientMessageId);
 
       // 낙관적 UI 업데이트
       const optimisticMessage: ChatMessage = {
@@ -166,9 +174,11 @@ export const useChat = () => {
         createdAt: new Date().toISOString(),
       };
 
+      console.log('[useChat] Adding optimistic message to UI');
       setMessages((prev) => [...prev, optimisticMessage]);
 
       // WebSocket으로 전송
+      console.log('[useChat] Calling sendMessage via WebSocket');
       sendMessage({
         threadId: selectedThreadId,
         clientMessageId,

@@ -2,13 +2,16 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Build mode argument (dev or prod)
+ARG BUILD_MODE=prod
+
 # 1) deps install (prefer npm ci if lockfile exists)
 COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# 2) build with PROD mode
+# 2) build with specified mode
 COPY . .
-RUN npm run build:prod
+RUN npm run build:${BUILD_MODE}
 
 # ---- runtime stage ----
 FROM nginx:1.27-alpine
