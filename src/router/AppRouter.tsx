@@ -43,6 +43,7 @@ import DiningTablePage from "@/pages/sales/DiningTablePage.tsx";
 
 // Analytics
 import SalesAnalyticsPage from "@/pages/analytics/SalesAnalyticsPage.tsx";
+import StockAnalyticsPage from "@/pages/analytics/StockAnalyticsPage.tsx";
 
 // Report
 import ReportGeneratePage from '@/pages/analytics/ReportGeneratePage';
@@ -139,6 +140,7 @@ export default function AppRouter() {
 
                         {/* 분석 관리 */}
                         <Route path="/analytics/sales" element={<SalesAnalyticsPage />} />
+                        <Route path="/analytics/stock" element={<StockAnalyticsPage/>}/>
                         <Route path="/reports" element={<MonthlyReportPage />} />
                         <Route path="/reports/generate" element={<ReportGeneratePage />} />
                         <Route path="/reports/monthly/:yearMonth" element={<MonthlyReportPage />} />
