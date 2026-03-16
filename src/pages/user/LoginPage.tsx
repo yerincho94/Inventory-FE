@@ -1,12 +1,30 @@
 import React from "react";
 import type { SocialProvider } from "@/types";
 
+const resolveLoginBaseUrl = (): string => {
+  const hostname = window.location.hostname;
+  const isLocal = hostname === "localhost" || hostname === "127.0.0.1";
+
+  if (isLocal) {
+    // 로컬에서는 nginx가 프록시하므로 빈 문자열 (같은 origin)
+    return "";
+  }
+
+  // 운영에서는 API 서버 URL
+  return import.meta.env.VITE_API_BASE_URL || "https://api.inventorykitchen.cloud";
+};
+
 const LoginPage: React.FC = () => {
   const handleLogin = (provider: SocialProvider): void => {
-    console.log(`${provider} 로그인 시도`);
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const loginBaseUrl = resolveLoginBaseUrl();
     const redirectUri = `${window.location.origin}/oauth2/callback`;
-    window.location.href = `${baseUrl}/oauth2/authorization/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const loginUrl = `${loginBaseUrl}/oauth2/authorization/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+    console.log('🔍 loginBaseUrl:', loginBaseUrl);
+    console.log('🔍 redirectUri:', redirectUri);
+    console.log('🔍 loginUrl:', loginUrl);
+
+    window.location.href = loginUrl;
   };
 
   return (

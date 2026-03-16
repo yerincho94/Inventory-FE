@@ -1,23 +1,48 @@
 import axios, {
     type AxiosError,
     type AxiosResponse,
-    type InternalAxiosRequestConfig
+    type InternalAxiosRequestConfig,
 } from 'axios';
 import {
     getAccessToken,
     setAccessToken,
     removeAccessToken,
-    extractToken
+    extractToken,
 } from '@/utils/auth.ts';
 import type { ApiResponse } from '@/types/common/common.ts';
 
+const resolveApiBaseUrl = (): string => {
+    if (typeof window === 'undefined') {
+        return import.meta.env.VITE_API_BASE_URL || '';
+    }
+
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    if (isLocal) {
+        // 로컬에서는 nginx가 프록시하므로 빈 문자열 (같은 origin)
+        return '';
+    }
+
+    // 운영에서는 API 서버 URL
+    return import.meta.env.VITE_API_BASE_URL || '';
+};
+
+const apiBaseUrl = resolveApiBaseUrl();
+
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
+    baseURL: apiBaseUrl,
     timeout: 70000,
     headers: {
         'Content-Type': 'application/json',
     },
-    withCredentials: true, // 쿠키 전송 허용
+    withCredentials: true,
+});
+
+const refreshClient = axios.create({
+    baseURL: apiBaseUrl,
+    timeout: 70000,
+    withCredentials: true,
 });
 
 let isRefreshing = false;
@@ -37,6 +62,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
     failedQueue = [];
 };
 
+function normalizeToken(token: string | null | undefined): string | null {
+    if (!token) return null;
+    const extracted = extractToken(token);
+    return extracted ? extracted.replace(/^"(.*)"$/, '$1') : null;
+}
+
 function isApiResponseEnvelope<T>(data: unknown): data is ApiResponse<T> {
     if (typeof data !== 'object' || data === null || Array.isArray(data)) {
         return false;
@@ -49,12 +80,13 @@ function isApiResponseEnvelope<T>(data: unknown): data is ApiResponse<T> {
         typeof obj.code === 'string' &&
         typeof obj.path === 'string' &&
         'data' in obj &&
-        // timestamp는 문자열일 수도, Spring Date 직렬화 배열(Array)일 수도 있음
         (typeof obj.timestamp === 'string' || Array.isArray(obj.timestamp))
     );
 }
 
-function unwrapApiResponse<T>(response: AxiosResponse<T | ApiResponse<T>>): AxiosResponse<T> {
+function unwrapApiResponse<T>(
+    response: AxiosResponse<T | ApiResponse<T>>,
+): AxiosResponse<T> {
     if (isApiResponseEnvelope<T>(response.data)) {
         return {
             ...response,
@@ -65,15 +97,54 @@ function unwrapApiResponse<T>(response: AxiosResponse<T | ApiResponse<T>>): Axio
     return response as AxiosResponse<T>;
 }
 
+export const reissueAccessToken = async (): Promise<string | null> => {
+    if (isRefreshing) {
+        return new Promise<string | null>((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+        });
+    }
+
+    isRefreshing = true;
+
+    try {
+        const response = await refreshClient.post('/api/auth/reissue');
+        const headerToken =
+            response.headers['authorization'] || response.headers['Authorization'];
+
+        const newAccessToken = normalizeToken(headerToken);
+
+        if (!newAccessToken) {
+            throw new Error('재발급 응답 헤더에 access token 이 없습니다.');
+        }
+
+        setAccessToken(newAccessToken);
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+
+        processQueue(null, newAccessToken);
+        return newAccessToken;
+    } catch (refreshError) {
+        processQueue(refreshError, null);
+        removeAccessToken();
+        return null;
+    } finally {
+        isRefreshing = false;
+    }
+};
+
+export const ensureAccessToken = async (): Promise<string | null> => {
+    const currentToken = normalizeToken(getAccessToken());
+    if (currentToken) {
+        return currentToken;
+    }
+    return reissueAccessToken();
+};
+
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-    const token = getAccessToken();
+    const token = normalizeToken(getAccessToken());
 
     if (token) {
-        const cleanToken = token.replace(/^"(.*)"$/, '$1');
         config.headers = config.headers ?? {};
-        config.headers.Authorization = cleanToken.startsWith('Bearer ')
-            ? cleanToken
-            : `Bearer ${cleanToken}`;
+        config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
@@ -97,58 +168,24 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            if (isRefreshing) {
-                return new Promise<string | null>((resolve, reject) => {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then((token) => {
-                        if (!token) {
-                            return Promise.reject(error);
-                        }
-
-                        originalRequest.headers = originalRequest.headers ?? {};
-                        originalRequest.headers.Authorization = `Bearer ${token}`;
-                        return apiClient(originalRequest);
-                    })
-                    .catch((err) => Promise.reject(err));
-            }
-
             originalRequest._retry = true;
-            isRefreshing = true;
 
-            try {
-                const { reissue } = await import('./auth.ts');
-                const response = await reissue();
+            const newAccessToken = await reissueAccessToken();
 
-                const newAccessToken = extractToken(
-                    response.headers['authorization'] || response.headers['Authorization']
-                );
-
-                if (!newAccessToken) {
-                    throw new Error('재발급 응답 헤더에 access token 이 없습니다.');
-                }
-
-                const cleanNewToken = newAccessToken.replace(/^"(.*)"$/, '$1');
-                setAccessToken(cleanNewToken);
-
-                apiClient.defaults.headers.common['Authorization'] = `Bearer ${cleanNewToken}`;
-                originalRequest.headers = originalRequest.headers ?? {};
-                originalRequest.headers.Authorization = `Bearer ${cleanNewToken}`;
-
-                processQueue(null, cleanNewToken);
-                return apiClient(originalRequest);
-            } catch (refreshError) {
-                processQueue(refreshError, null);
+            if (!newAccessToken) {
                 removeAccessToken();
                 window.location.href = '/login';
-                return Promise.reject(refreshError);
-            } finally {
-                isRefreshing = false;
+                return Promise.reject(error);
             }
+
+            originalRequest.headers = originalRequest.headers ?? {};
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+            return apiClient(originalRequest);
         }
 
         return Promise.reject(error);
-    }
+    },
 );
 
 export default apiClient;
