@@ -13,6 +13,15 @@ export type ConfirmIngredientMappingRequest = {
     existingIngredientPublicId?: string | null;
     newIngredientName?: string | null;
     newIngredientUnit?: string | null;
+    normalizedUnit?: string | null;
+    normalizedUnitSize?: number | null;
+    specText?: string | null;
+};
+
+export type UpdateNormalizationRequest = {
+    normalizedUnit: string;
+    normalizedUnitSize: number | null;
+    specText?: string | null;
 };
 
 /**
@@ -70,6 +79,23 @@ export async function confirmIngredientMapping(
 ): Promise<unknown> {
     const res = await apiClient.put(
         `${base(storePublicId, inboundPublicId)}/items/${inboundItemPublicId}/ingredient-mapping`,
+        payload
+    );
+    return res.data;
+}
+
+/**
+ * 입고 아이템 수량 정규화 업데이트 (재료 매핑 없이 정규화 정보만 저장)
+ * PUT /api/stores/{storePublicId}/inbounds/{inboundPublicId}/items/{inboundItemPublicId}/normalization
+ */
+export async function updateInboundItemNormalization(
+    storePublicId: string,
+    inboundPublicId: string,
+    inboundItemPublicId: string,
+    payload: UpdateNormalizationRequest
+): Promise<unknown> {
+    const res = await apiClient.put(
+        `${base(storePublicId, inboundPublicId)}/items/${inboundItemPublicId}/normalization`,
         payload
     );
     return res.data;
