@@ -87,8 +87,8 @@ export default function SalesAnalyticsPage() {
         setError(null);
         try {
             // fromDate(00:00:00) ~ toDate(23:59:59)
-            const start = new Date(`${fromDate}T00:00:00`);
-            const end = new Date(`${toDate}T23:59:59`);
+            const start = new Date(`${fromDate}T00:00:00+09:00`);
+            const end = new Date(`${toDate}T23:59:59+09:00`);
 
             const mappedDateRange = { from: start, to: end };
 
@@ -353,7 +353,10 @@ export default function SalesAnalyticsPage() {
                                             dy={10}
                                             tickFormatter={(tick) => {
                                                 if (interval === 'day') return tick.substring(5, 10); // MM-DD
-                                                if (interval === 'week') return `${tick.substring(0, 4)}주차`; // YYYY주차
+                                                if (interval === 'week') {
+                                                    const [, m, d] = tick.split('-');
+                                                    return `${parseInt(m)}/${parseInt(d)}주`;
+                                                }
                                                 if (interval === 'month') {
                                                     const [y, m] = tick.split('-');
                                                     return `${y}년 ${m}월`;
