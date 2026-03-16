@@ -131,15 +131,24 @@ export const useChatSocket = ({
     }, [updateConnectionStatus]);
 
     const sendMessage = useCallback((request: ChatSendMessageRequest) => {
+        console.log('[useChatSocket] sendMessage called:', {
+            request,
+            clientExists: !!clientRef.current,
+            clientActive: clientRef.current?.active,
+            clientConnected: clientRef.current?.connected,
+        });
+
         if (!clientRef.current?.connected) {
-            console.error('WebSocket is not connected');
+            console.error('[useChatSocket] WebSocket is not connected - cannot send message');
             return;
         }
 
+        console.log('[useChatSocket] Publishing message to /app/chat.send');
         clientRef.current.publish({
             destination: '/app/chat.send',
             body: JSON.stringify(request),
         });
+        console.log('[useChatSocket] Message published successfully');
     }, []);
 
     useEffect(() => {
