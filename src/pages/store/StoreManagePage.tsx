@@ -149,6 +149,8 @@ const StoreManagePage = () => {
       if (newDefault) {
         setCurrentStore(newDefault);
       }
+
+      window.dispatchEvent(new Event('defaultStoreChanged'));
     } catch (err) {
       console.error('Failed to set default store:', err);
       alert('대표 매장 설정에 실패했습니다.');
