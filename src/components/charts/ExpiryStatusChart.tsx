@@ -1,36 +1,34 @@
-import {PieChart, Pie, Cell, ResponsiveContainer, Tooltip} from 'recharts';
+import {PieChart, Pie, Cell, ResponsiveContainer, Tooltip, type TooltipProps} from 'recharts';
 import type {StockAnalyticResponse} from "@/types/analytics/stockAnalytics.ts";
 
-// --- 타입 정의 ---
-interface ChartData {
+// --- 타입 정의 (유지) ---
+interface ExpiryChartData {
     name: string;
     value: number;
     color: string;
     percent: string;
 }
 
-interface CustomTooltipProps {
-    active?: boolean;
-    payload?: {
-        payload: ChartData;
-    }[];
-}
+type CustomTooltipProps = TooltipProps<number, string> & {
+    payload?: Array<{
+        payload: ExpiryChartData;
+    }>;
+};
 
-// --- 커스텀 툴팁 컴포넌트 ---
 const CustomTooltip = ({active, payload}: CustomTooltipProps) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         return (
-            <div className="rounded-xl border border-gray-200 bg-white/80 p-3 shadow-lg backdrop-blur-sm">
-                <p className="text-sm font-bold" style={{color: data.color}}>
-                    {data.name}
+            <div
+                className="rounded-xl border border-gray-100 bg-white/95 p-3 shadow-xl backdrop-blur-sm z-50 ring-1 ring-black/5">
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{color: data.color}}>
+                    {data.name} 상태
                 </p>
-                <p className="mt-2 text-xs text-gray-600">
-                    <span className="font-bold">수량:</span> {String(data.value)}개
-                </p>
-                <p className="text-xs text-gray-600">
-                    <span className="font-bold">비중:</span> {data.percent}%
-                </p>
+                <div className="space-y-0.5">
+                    <p className="text-sm font-black text-gray-900">
+                        {data.value}개 <span className="text-gray-400 font-medium ml-1">({data.percent}%)</span>
+                    </p>
+                </div>
             </div>
         );
     }
@@ -39,10 +37,9 @@ const CustomTooltip = ({active, payload}: CustomTooltipProps) => {
 
 // --- 메인 차트 컴포넌트 ---
 const ExpiryStatusChart = ({data}: { data: StockAnalyticResponse[] }) => {
-    const COLORS = ['#ef4444', '#f59e0b', '#10b981']; // 위험, 주의, 안전
+    const COLORS = ['#ef4444', '#f59e0b', '#10b981'];
 
-    // 데이터 가공 로직
-    const processData = (): ChartData[] => {
+    const chartData: ExpiryChartData[] = (() => {
         let risk = 0, warning = 0, safe = 0;
         const now = new Date();
 
@@ -71,63 +68,69 @@ const ExpiryStatusChart = ({data}: { data: StockAnalyticResponse[] }) => {
             },
             {name: '안전', value: safe, color: COLORS[2], percent: total > 0 ? (safe / total * 100).toFixed(1) : '0.0'},
         ];
-    };
+    })();
 
-    const chartData = processData();
-    const totalItems = data.length;
-
-    // 데이터가 아예 없는 경우 처리 (빈 도넛 방지)
     const hasData = chartData.some(d => d.value > 0);
 
     return (
         <div className="flex flex-col h-full w-full">
-            {/* 차트 영역 */}
-            <div className="flex-1 relative min-h-0">
+            {/* 1. min-h-0과 aspect-square 등을 활용해 컨테이너 비율 최적화 */}
+            <div className="flex-1 relative min-h-[240px] w-full mx-auto">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
-                            data={hasData ? chartData : [{name: '데이터 없음', value: 1, color: '#e5e7eb', percent: '0'}]}
+                            data={hasData ? chartData : [{name: 'Empty', value: 1, color: '#f3f4f6', percent: '0'}]}
                             dataKey="value"
                             nameKey="name"
                             cx="50%"
                             cy="50%"
-                            innerRadius="60%" // 두께감 조절
-                            outerRadius="90%"
-                            paddingAngle={0} // 간격을 0으로 설정하여 꽉 찬 원형 유지
+                            innerRadius="70%" // 2. 더 얇고 깔끔한 도넛을 위해 비율 조정
+                            outerRadius="95%"
+                            paddingAngle={hasData ? 4 : 0} // 3. 데이터가 있을 때만 조각 사이 간격 부여
+                            minAngle={15} // 4. 값이 아주 작아도 원형이 깨지지 않게 최소 각도 설정
                             startAngle={90}
                             endAngle={-270}
-                            stroke="none" // 테두리 선 제거
+                            stroke="none"
+                            cornerRadius={4} // 5. 조각 끝을 살짝 둥글게 하여 더 원형에 가깝게 보이게 함
                         >
                             {hasData ? (
                                 chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color}/>
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={entry.color}
+                                        style={{outline: 'none'}}
+                                    />
                                 ))
                             ) : (
-                                <Cell key="cell-empty" fill="#f3f4f6"/>
+                                <Cell fill="#f3f4f6"/>
                             )}
                         </Pie>
-                        {hasData && <Tooltip cursor={{fill: 'transparent'}} content={<CustomTooltip/>}/>}
+
+                        {hasData && (
+                            <Tooltip
+                                content={<CustomTooltip/>}
+                                offset={15}
+                                cursor={false}
+                                allowEscapeViewBox={{x: true, y: true}}
+                            />
+                        )}
                     </PieChart>
                 </ResponsiveContainer>
 
-                {/* 중앙 텍스트 복구 (도넛이 얇아져서 다시 넣어도 괜찮음) */}
                 <div
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase">Total</div>
-                    <div className="text-2xl font-black text-gray-900">{totalItems}</div>
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none select-none">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Total</p>
+                    <p className="text-2xl font-black text-gray-900 leading-none">{data.length}</p>
                 </div>
             </div>
 
-            {/* 범례 영역 */}
-            <div className="flex justify-center items-center gap-4 pt-2 pb-1">
+            <div className="flex justify-center items-center gap-4 mt-4 pb-2">
                 {chartData.map((entry, index) => (
                     <div key={`legend-${index}`} className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: entry.color}}/>
-                        <span className="text-xs font-bold text-gray-500">
+                        <span className="text-[11px] font-bold text-gray-500">
                             {entry.name}
-                            <span className="text-gray-400 font-normal ml-1">
-                                ({entry.percent}%)
-                            </span>
+                            <span className="text-gray-400 font-medium ml-1">({entry.percent}%)</span>
                         </span>
                     </div>
                 ))}
