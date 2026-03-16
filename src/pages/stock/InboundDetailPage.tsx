@@ -2,16 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { requireStorePublicId } from '@/utils/store';
 import {
-    fetchInboundDetail,
-    confirmIngredientMapping,
     confirmInboundFinal,
+    confirmIngredientMapping,
+    fetchInboundDetail,
+    updateInboundItemNormalization,
 } from '@/api/stock/inbound.ts';
-import type {
-    StockInboundResponse,
-    StockInboundItemResponse,
-    Candidate,
-} from '@/types';
+import type { Candidate, StockInboundItemResponse, StockInboundResponse } from '@/types';
+import type { IngredientUnit } from '@/types/reference/ingredient';
 import UnifiedIngredientSelector from '@/components/stock/UnifiedIngredientSelector';
+import {
+    buildNormalizationFormulaText,
+    calculateNormalizedQuantity,
+    createNormalizationDraft,
+    formatNormalizedQuantityText,
+    formatPackageSizeText,
+    getUnitSelectOptions,
+    updateDraftUnit,
+    type InboundNormalizationDraft,
+} from '@/utils/stockNormalization';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -26,11 +34,31 @@ type ConfirmIngredientPayload = {
     existingIngredientPublicId?: string;
     newIngredientName?: string;
     newIngredientUnit?: string;
+    specText?: string;
 };
 
 type InboundDetailLocationState = {
     resolvedNormalizedKeyByItemId?: Record<string, string>;
 };
+
+function toPositiveNumber(value: unknown): number | null {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) && value > 0 ? value : null;
+    }
+
+    if (typeof value !== 'string') {
+        return null;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return null;
+    }
+
+    const normalized = trimmed.replace(/,/g, '');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
 
 function formatInboundNumber(value?: string | null) {
     if (!value) return '-';
@@ -72,15 +100,15 @@ function StatusBadge({ status }: { status: string | null }) {
     const map: Record<string, { label: string; cls: string }> = {
         AUTO_SUGGESTED: {
             label: '자동 추천',
-            cls: 'bg-slate-100 text-slate-700 border-slate-200',
+            cls: 'border-slate-200 bg-slate-100 text-slate-700',
         },
         CONFIRMED: {
             label: '확정 완료',
-            cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            cls: 'border-emerald-200 bg-emerald-50 text-emerald-700',
         },
         FAILED: {
             label: '매핑 필요',
-            cls: 'bg-rose-50 text-rose-700 border-rose-200',
+            cls: 'border-rose-200 bg-rose-50 text-rose-700',
         },
     };
 
@@ -94,7 +122,7 @@ function StatusBadge({ status }: { status: string | null }) {
 
     const { label, cls } = map[status] ?? {
         label: status,
-        cls: 'bg-gray-100 text-gray-500 border-gray-200',
+        cls: 'border-gray-200 bg-gray-100 text-gray-500',
     };
 
     return (
@@ -125,9 +153,10 @@ export default function InboundDetailPage() {
 
     const [modalOpen, setModalOpen] = useState(false);
     const [modalItem, setModalItem] = useState<StockInboundItemResponse | null>(null);
+    const [normalizationDraftByItemId, setNormalizationDraftByItemId] = useState<Record<string, InboundNormalizationDraft>>({});
 
     const [resolvedNormalizedKeyByItemId] = useState<Record<string, string>>(
-        () => locationState?.resolvedNormalizedKeyByItemId ?? {}
+        () => locationState?.resolvedNormalizedKeyByItemId ?? {},
     );
 
     const [toast, setToast] = useState<ToastState>({
@@ -162,17 +191,31 @@ export default function InboundDetailPage() {
         loadDetail();
     }, [loadDetail]);
 
+    useEffect(() => {
+        if (!inbound) return;
+
+        setNormalizationDraftByItemId((prev) => {
+            const next: Record<string, InboundNormalizationDraft> = {};
+
+            inbound.items.forEach((item) => {
+                next[item.inboundItemPublicId] = prev[item.inboundItemPublicId] ?? createNormalizationDraft(item);
+            });
+
+            return next;
+        });
+    }, [inbound]);
+
     const counts = useMemo(() => {
         if (!inbound) return { suggested: 0, confirmed: 0, failed: 0 };
 
         return inbound.items.reduce(
-            (acc, it) => {
-                if (it.resolutionStatus === 'AUTO_SUGGESTED') acc.suggested++;
-                else if (it.resolutionStatus === 'CONFIRMED') acc.confirmed++;
-                else if (it.resolutionStatus === 'FAILED') acc.failed++;
+            (acc, item) => {
+                if (item.resolutionStatus === 'AUTO_SUGGESTED') acc.suggested += 1;
+                else if (item.resolutionStatus === 'CONFIRMED') acc.confirmed += 1;
+                else if (item.resolutionStatus === 'FAILED') acc.failed += 1;
                 return acc;
             },
-            { suggested: 0, confirmed: 0, failed: 0 }
+            { suggested: 0, confirmed: 0, failed: 0 },
         );
     }, [inbound]);
 
@@ -193,10 +236,55 @@ export default function InboundDetailPage() {
         return inbound.items.length;
     }, [inbound]);
 
+    const getDraft = useCallback(
+        (item: StockInboundItemResponse): InboundNormalizationDraft => {
+            return normalizationDraftByItemId[item.inboundItemPublicId] ?? createNormalizationDraft(item);
+        },
+        [normalizationDraftByItemId],
+    );
+
+    const handleChangeNormalizationDraft = useCallback((inboundItemPublicId: string, draft: InboundNormalizationDraft) => {
+        setNormalizationDraftByItemId((prev) => ({
+            ...prev,
+            [inboundItemPublicId]: draft,
+        }));
+    }, []);
+
     const handleOpenSelector = useCallback((item: StockInboundItemResponse) => {
         setModalItem(item);
         setModalOpen(true);
     }, []);
+
+    const handleInlineUnitChange = useCallback(
+        (item: StockInboundItemResponse, nextUnit: IngredientUnit) => {
+            const currentDraft = getDraft(item);
+            const nextDraft = updateDraftUnit(currentDraft, nextUnit, item);
+            handleChangeNormalizationDraft(item.inboundItemPublicId, nextDraft);
+        },
+        [getDraft, handleChangeNormalizationDraft],
+    );
+
+    const handleSaveNormalization = useCallback(
+        async (inboundItemPublicId: string, draft: InboundNormalizationDraft, specText?: string) => {
+            if (!storePublicId || typeof inboundPublicId !== 'string') return;
+
+            try {
+                await updateInboundItemNormalization(storePublicId, inboundPublicId, inboundItemPublicId, {
+                    normalizedUnit: draft.unit,
+                    normalizedUnitSize: toPositiveNumber(draft.packageSizeInput),
+                    specText: specText?.trim() || null,
+                });
+
+                showToast('수량 정규화가 저장되었습니다.', 'success');
+                await loadDetail();
+            } catch (error) {
+                console.error(error);
+                showToast('수량 정규화 저장에 실패했습니다.', 'error');
+                throw error;
+            }
+        },
+        [storePublicId, inboundPublicId, showToast, loadDetail],
+    );
 
     const handleConfirmIngredient = useCallback(
         async (payload: ConfirmIngredientPayload) => {
@@ -205,16 +293,12 @@ export default function InboundDetailPage() {
             try {
                 setLoadingItemId(payload.inboundItemPublicId);
 
-                await confirmIngredientMapping(
-                    storePublicId,
-                    inboundPublicId,
-                    payload.inboundItemPublicId,
-                    {
-                        existingIngredientPublicId: payload.existingIngredientPublicId ?? null,
-                        newIngredientName: payload.newIngredientName ?? null,
-                        newIngredientUnit: payload.newIngredientUnit ?? null,
-                    }
-                );
+                await confirmIngredientMapping(storePublicId, inboundPublicId, payload.inboundItemPublicId, {
+                    existingIngredientPublicId: payload.existingIngredientPublicId ?? null,
+                    newIngredientName: payload.newIngredientName ?? null,
+                    newIngredientUnit: payload.newIngredientUnit ?? null,
+                    specText: payload.specText ?? null,
+                });
 
                 setModalOpen(false);
                 setModalItem(null);
@@ -228,7 +312,7 @@ export default function InboundDetailPage() {
                 setLoadingItemId(null);
             }
         },
-        [storePublicId, inboundPublicId, showToast, loadDetail]
+        [storePublicId, inboundPublicId, showToast, loadDetail],
     );
 
     const handleConfirmInbound = useCallback(async () => {
@@ -255,17 +339,17 @@ export default function InboundDetailPage() {
         } catch (error: unknown) {
             console.error(error);
 
-            let msg = '입고 확정 중 오류가 발생했습니다.';
+            let messageText = '입고 확정 중 오류가 발생했습니다.';
             if (
                 typeof error === 'object' &&
                 error !== null &&
                 'response' in error &&
                 typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
             ) {
-                msg = (error as { response?: { data?: { message?: string } } }).response!.data!.message!;
+                messageText = (error as { response?: { data?: { message?: string } } }).response!.data!.message!;
             }
 
-            showToast(msg, 'error');
+            showToast(messageText, 'error');
         } finally {
             setLoadingConfirmFinal(false);
         }
@@ -297,6 +381,7 @@ export default function InboundDetailPage() {
     }
 
     const isConfirmedInbound = inbound.status === 'CONFIRMED';
+    const unitOptions = getUnitSelectOptions();
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -315,9 +400,7 @@ export default function InboundDetailPage() {
                         <span className="text-gray-300">/</span>
                         <div>
                             <div className="text-sm font-black text-gray-900">입고 상세</div>
-                            <div className="text-xs font-mono text-gray-400">
-                                입고번호 {formatInboundNumber(inbound.inboundPublicId)}
-                            </div>
+                            <div className="text-xs font-mono text-gray-400">입고번호 {formatInboundNumber(inbound.inboundPublicId)}</div>
                         </div>
                     </div>
 
@@ -342,9 +425,7 @@ export default function InboundDetailPage() {
                     <div className="grid grid-cols-2 gap-x-8 gap-y-6 px-6 py-5 md:grid-cols-3 xl:grid-cols-6">
                         <div>
                             <p className="text-[11px] font-black uppercase tracking-wide text-gray-400">입고번호</p>
-                            <p className="mt-2 font-mono text-sm font-bold text-gray-900">
-                                {formatInboundNumber(inbound.inboundPublicId)}
-                            </p>
+                            <p className="mt-2 font-mono text-sm font-bold text-gray-900">{formatInboundNumber(inbound.inboundPublicId)}</p>
                         </div>
 
                         <div>
@@ -411,105 +492,143 @@ export default function InboundDetailPage() {
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full min-w-[1560px] text-left text-sm">
                             <thead className="border-b border-gray-200 bg-gray-50 text-xs font-black uppercase tracking-wide text-gray-500">
-                            <tr>
-                                <th className="w-14 px-5 py-3">#</th>
-                                <th className="px-4 py-3">품목명</th>
-                                <th className="px-4 py-3">매핑 재료</th>
-                                <th className="px-4 py-3 text-center">수량</th>
-                                <th className="px-4 py-3 text-right">단가</th>
-                                <th className="px-4 py-3 text-right">금액</th>
-                                <th className="px-4 py-3 text-center">유통기한</th>
-                                <th className="px-4 py-3 text-center">상태</th>
-                                <th className="px-4 py-3 text-center">관리</th>
-                            </tr>
+                                <tr>
+                                    <th className="w-14 px-5 py-3">#</th>
+                                    <th className="px-4 py-3">품목명</th>
+                                    <th className="px-4 py-3">상품명</th>
+                                    <th className="px-4 py-3">매핑 재료</th>
+                                    <th className="px-4 py-3 text-center">기준 단위</th>
+                                    <th className="px-4 py-3 text-center">입고 수량</th>
+                                    <th className="px-4 py-3 text-center" title="12입, 30구, 1kg 등">1개당 규격</th>
+                                    <th className="px-4 py-3">재고 반영 수량</th>
+                                    <th className="px-4 py-3 text-right">단가</th>
+                                    <th className="px-4 py-3 text-right">금액</th>
+                                    <th className="px-4 py-3 text-center">유통기한</th>
+                                    <th className="px-4 py-3 text-center">상태</th>
+                                    <th className="px-4 py-3 text-center">관리</th>
+                                </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                            {inbound.items.map((item, idx) => {
-                                const itemId = item.inboundItemPublicId;
-                                const isLoadingThis = loadingItemId === itemId;
-                                const resolvedNormalizedRawKey = resolvedNormalizedKeyByItemId[itemId];
-                                const lineAmount = Number(item.quantity ?? 0) * Number(item.unitCost ?? 0);
+                                {inbound.items.map((item, idx) => {
+                                    const itemId = item.inboundItemPublicId;
+                                    const isLoadingThis = loadingItemId === itemId;
+                                    const resolvedNormalizedRawKey = resolvedNormalizedKeyByItemId[itemId];
+                                    const lineAmount = Number(item.quantity ?? 0) * Number(item.unitCost ?? 0);
+                                    const draft = getDraft(item);
+                                    const normalizedQuantity = calculateNormalizedQuantity(item.quantity, draft, item.normalizedQuantity ?? null);
+                                    const formulaText = buildNormalizationFormulaText(item.quantity, draft, item.normalizedQuantity ?? null);
+                                    const packageSizeText = formatPackageSizeText(draft);
+                                    const hasIncompleteNormalization = draft.unit !== 'EA' && packageSizeText === '-';
 
-                                let actionLabel = '재료 선택';
-                                if (item.resolutionStatus === 'FAILED') actionLabel = '매핑';
-                                else if (item.resolutionStatus === 'AUTO_SUGGESTED') actionLabel = '검토/수정';
-                                else if (item.resolutionStatus === 'CONFIRMED') actionLabel = '수정';
+                                    let actionLabel = '재료 선택';
+                                    if (item.resolutionStatus === 'FAILED') actionLabel = '매핑';
+                                    else if (item.resolutionStatus === 'AUTO_SUGGESTED') actionLabel = '검토/수정';
+                                    else if (item.resolutionStatus === 'CONFIRMED') actionLabel = '수정';
 
-                                return (
-                                    <tr key={itemId} className="hover:bg-gray-50">
-                                        <td className="px-5 py-4 font-mono text-xs text-gray-400">{idx + 1}</td>
+                                    return (
+                                        <tr key={itemId} className="hover:bg-gray-50">
+                                            <td className="px-5 py-4 font-mono text-xs text-gray-400">{idx + 1}</td>
 
-                                        <td className="px-4 py-4">
-                                            <div className="font-bold text-gray-900">{item.rawProductName}</div>
-                                        </td>
+                                            <td className="px-4 py-4">
+                                                <div className="font-bold text-gray-900">{item.rawProductName}</div>
+                                            </td>
 
-                                        <td className="px-4 py-4">
-                                            {item.ingredientName ? (
-                                                <span className="font-bold text-gray-900">{item.ingredientName}</span>
-                                            ) : resolvedNormalizedRawKey ? (
-                                                <span className="font-bold text-gray-900">{resolvedNormalizedRawKey}</span>
-                                            ) : item.normalizedRawKey ? (
-                                                <span className="font-bold text-gray-900">{item.normalizedRawKey}</span>
-                                            ) : (
-                                                <span className="text-xs text-gray-400">-</span>
-                                            )}
-                                        </td>
+                                            <td className="px-4 py-4">
+                                                <div className="text-sm text-gray-700">{item.productDisplayName || item.specText || '-'}</div>
+                                                <div className="mt-1 text-[11px] text-gray-400">
+                                                    인식 규격: <span className="font-semibold text-gray-600">{draft.detectedSpecLabel || '-'}</span>
+                                                </div>
+                                            </td>
 
-                                        <td className="px-4 py-4 text-center font-bold text-gray-900">
-                                            {item.quantity}
-                                        </td>
+                                            <td className="px-4 py-4">
+                                                {item.ingredientName ? (
+                                                    <span className="font-bold text-gray-900">{item.ingredientName}</span>
+                                                ) : resolvedNormalizedRawKey ? (
+                                                    <span className="font-bold text-gray-900">{resolvedNormalizedRawKey}</span>
+                                                ) : item.normalizedRawKey ? (
+                                                    <span className="font-bold text-gray-900">{item.normalizedRawKey}</span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">-</span>
+                                                )}
+                                            </td>
 
-                                        <td className="px-4 py-4 text-right text-gray-700">
-                                            {formatCurrency(item.unitCost)}
-                                        </td>
-
-                                        <td className="px-4 py-4 text-right font-bold text-gray-900">
-                                            {formatCurrency(lineAmount)}
-                                        </td>
-
-                                        <td className="px-4 py-4 text-center text-gray-700">
-                                            {formatDate(item.expirationDate)}
-                                        </td>
-
-                                        <td className="px-4 py-4 text-center">
-                                            <StatusBadge status={item.resolutionStatus} />
-                                        </td>
-
-                                        <td className="px-4 py-4 text-center">
-                                            {isConfirmedInbound ? (
-                                                <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-500">
-                                                        완료
-                                                    </span>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleOpenSelector(item)}
-                                                    disabled={isLoadingThis}
-                                                    className={`rounded-md px-3 py-2 text-[11px] font-black transition-colors ${
-                                                        isLoadingThis
-                                                            ? 'cursor-not-allowed bg-gray-300 text-gray-600'
-                                                            : 'bg-gray-900 text-white hover:bg-black'
+                                            <td className="px-4 py-4 text-center">
+                                                <select
+                                                    value={draft.unit}
+                                                    onChange={(e) => handleInlineUnitChange(item, e.target.value as IngredientUnit)}
+                                                    disabled={isConfirmedInbound || isLoadingThis}
+                                                    className={`w-[104px] rounded-md border px-3 py-2 text-xs font-black outline-none ${
+                                                        isConfirmedInbound || isLoadingThis
+                                                            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+                                                            : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500'
                                                     }`}
                                                 >
-                                                    {isLoadingThis ? '처리 중...' : actionLabel}
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                                    {unitOptions.map((option) => (
+                                                        <option key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </td>
+
+                                            <td className="px-4 py-4 text-center font-bold text-gray-900">{item.quantity}</td>
+
+                                            <td className="px-4 py-4 text-center text-gray-700">
+                                                <div className={`font-bold ${hasIncompleteNormalization ? 'text-rose-600' : 'text-gray-900'}`}>
+                                                    {packageSizeText}
+                                                </div>
+                                            </td>
+
+                                            <td className="px-4 py-4">
+                                                <div className={`font-black ${hasIncompleteNormalization ? 'text-rose-600' : 'text-gray-900'}`}>
+                                                    {formatNormalizedQuantityText(normalizedQuantity, draft.unit)}
+                                                </div>
+                                                <div className="mt-1 text-[11px] text-gray-400">{formulaText}</div>
+                                            </td>
+
+                                            <td className="px-4 py-4 text-right text-gray-700">{formatCurrency(item.unitCost)}</td>
+
+                                            <td className="px-4 py-4 text-right font-bold text-gray-900">{formatCurrency(lineAmount)}</td>
+
+                                            <td className="px-4 py-4 text-center text-gray-700">{formatDate(item.expirationDate)}</td>
+
+                                            <td className="px-4 py-4 text-center">
+                                                <StatusBadge status={item.resolutionStatus} />
+                                            </td>
+
+                                            <td className="px-4 py-4 text-center">
+                                                {isConfirmedInbound ? (
+                                                    <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-500">
+                                                        완료
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleOpenSelector(item)}
+                                                        disabled={isLoadingThis}
+                                                        className={`rounded-md px-3 py-2 text-[11px] font-black transition-colors ${
+                                                            isLoadingThis
+                                                                ? 'cursor-not-allowed bg-gray-300 text-gray-600'
+                                                                : 'bg-gray-900 text-white hover:bg-black'
+                                                        }`}
+                                                    >
+                                                        {isLoadingThis ? '처리 중...' : actionLabel}
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                             <tfoot className="border-t border-gray-200 bg-gray-50">
-                            <tr>
-                                <td colSpan={5} className="px-4 py-4 text-right text-sm font-black text-gray-700">
-                                    총 비용
-                                </td>
-                                <td className="px-4 py-4 text-right text-lg font-black text-gray-900">
-                                    {formatCurrency(totalCost)}
-                                </td>
-                                <td colSpan={3} />
-                            </tr>
+                                <tr>
+                                    <td colSpan={9} className="px-4 py-4 text-right text-sm font-black text-gray-700">
+                                        총 비용
+                                    </td>
+                                    <td className="px-4 py-4 text-right text-lg font-black text-gray-900">{formatCurrency(totalCost)}</td>
+                                    <td colSpan={3} />
+                                </tr>
                             </tfoot>
                         </table>
                     </div>
@@ -520,6 +639,9 @@ export default function InboundDetailPage() {
                 isOpen={modalOpen}
                 item={modalItem}
                 suggestions={getItemSuggestions(modalItem)}
+                normalizationDraft={modalItem ? getDraft(modalItem) : null}
+                onChangeNormalizationDraft={handleChangeNormalizationDraft}
+                onSaveNormalization={handleSaveNormalization}
                 onConfirm={handleConfirmIngredient}
                 onClose={() => {
                     setModalOpen(false);

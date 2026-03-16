@@ -28,10 +28,12 @@ export interface StockInboundItemResponse {
     normalizedRawKey: string | null;
     normalizedRawFull?: string | null;
     quantity: number;
+    normalizedQuantity?: number | null;
     unitCost: number;
     expirationDate: string | null;
     resolutionStatus: ResolutionStatus | null;
     specText: string | null;
+    productDisplayName?: string | null;
 }
 
 export interface StockInboundResponse {

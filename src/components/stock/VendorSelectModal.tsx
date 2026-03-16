@@ -122,10 +122,6 @@ export default function VendorSelectModal({
                                 {error}
                             </div>
                         </div>
-                    ) : filteredVendors.length === 0 && !searchTerm ? (
-                        <div className="py-16 text-center text-sm text-gray-500">
-                            등록된 거래처가 없습니다.
-                        </div>
                     ) : (
                         <div>
                             <div className="bg-gray-50 border-b border-gray-200 px-6 py-2.5 sticky top-0">
@@ -162,7 +158,7 @@ export default function VendorSelectModal({
 
                             {filteredVendors.length === 0 ? (
                                 <div className="py-12 text-center text-sm text-gray-500">
-                                    조회된 거래처가 없습니다.
+                                    {searchTerm ? '검색 결과가 없습니다.' : '등록된 거래처가 없습니다.'}
                                 </div>
                             ) : (
                                 filteredVendors.map((vendor) => (
