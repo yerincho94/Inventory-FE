@@ -63,7 +63,6 @@ export default function StoreMemberPage() {
     }
   };
 
-  // ACTIVE 상태의 멤버만 필터링하고 검색 적용
   const filteredMembers = useMemo(() => {
     return members
       .filter(member => member.status === 'ACTIVE')
@@ -71,6 +70,11 @@ export default function StoreMemberPage() {
         const matchesSearch = member.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             member.userEmail.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
+      })
+      .sort((a, b) => {
+        if (a.role === 'OWNER' && b.role !== 'OWNER') return -1;
+        if (a.role !== 'OWNER' && b.role === 'OWNER') return 1;
+        return 0;
       });
   }, [members, searchTerm]);
 
