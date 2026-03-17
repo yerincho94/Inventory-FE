@@ -4,6 +4,7 @@ import { CheckCheck, Trash2, MoreVertical } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { formatRelativeTime, formatAbsoluteDateTime } from '@/utils/notification';
 import type { NotificationResponse } from '@/types/notification';
+import Loading from '@/components/loading/Loading';
 
 type FilterType = 'all' | 'unread';
 
@@ -114,6 +115,10 @@ export default function NotificationPage() {
     }
   };
 
+  if (isLoading && notifications.length === 0) {
+    return <Loading />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 pt-24 pb-12">
       <div className="mx-auto max-w-5xl px-6">
@@ -178,12 +183,6 @@ export default function NotificationPage() {
           {error && (
             <div className="p-8 text-center text-sm font-semibold text-red-600">
               {error}
-            </div>
-          )}
-
-          {isLoading && notifications.length === 0 && (
-            <div className="flex items-center justify-center p-12">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
             </div>
           )}
 

@@ -3,6 +3,7 @@ import { getStockInbounds } from "@/api/stock/stock.ts";
 import type { StockInboundListResponse, InboundSearchCondition } from "@/types";
 import { requireStorePublicId } from "@/utils/store";
 import InboundDetailModal from "@/components/stock/InboundDetailModal";
+import Loading from "@/components/loading/Loading";
 
 function formatDate(dateStr?: string | null) {
     if (!dateStr) return "-";
@@ -98,6 +99,10 @@ export default function StockInboundPage() {
     };
 
     const hasData = useMemo(() => inbounds.length > 0, [inbounds]);
+
+    if (loading) {
+        return <Loading />;
+    }
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -238,11 +243,7 @@ export default function StockInboundPage() {
                         </div>
                     </div>
 
-                    {loading ? (
-                        <div className="px-6 py-20 text-center">
-                            <p className="text-sm font-bold text-gray-400">데이터를 불러오는 중...</p>
-                        </div>
-                    ) : !hasData ? (
+                    {!hasData ? (
                         <div className="px-6 py-20 text-center">
                             <p className="text-base font-bold text-gray-500">확정된 입고 내역이 없습니다.</p>
                             <p className="mt-2 text-sm text-gray-400">

@@ -12,6 +12,7 @@ import {
 } from '@/api/analytics/report.ts';
 import type { ReportSummaryResponse } from '@/types/analytics/report.ts';
 import { WASTE_REASON_LABELS } from '@/types/analytics/report.ts';
+import Loading from '@/components/loading/Loading';
 
 /** 금액 포맷팅 */
 function formatAmount(amount: number): string {
@@ -91,6 +92,10 @@ export default function ReportGeneratePage() {
         menuName: m.menuName,
         totalQuantity: m.totalQuantity,
     })) ?? [];
+
+    if (isQuerying || isDownloading) {
+        return <Loading />;
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-6">

@@ -2,20 +2,21 @@
  * 주문 목록 페이지
  */
 
-import { useEffect, useState } from 'react';
-import { getSalesOrders } from '@/api';
-import { requireStorePublicId } from '@/utils/store';
-import type { SalesOrderResponse, SalesOrderStatus } from '@/types/sales/salesOrder.ts';
-import type { PageResponse } from '@/types/common/common';
+import {useEffect, useState} from 'react';
+import {getSalesOrders} from '@/api';
+import {requireStorePublicId} from '@/utils/store';
+import type {SalesOrderResponse, SalesOrderStatus} from '@/types/sales/salesOrder.ts';
+import type {PageResponse} from '@/types/common/common';
 import SalesOrderDetailModal from './SalesOrderDetailModal';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {ChevronLeft, ChevronRight} from 'lucide-react';
+import Loading from '@/components/loading/Loading';
 
 type VIEW = 'LIST' | 'DETAIL';
 
 /**
  * 주문 상태 뱃지
  */
-function StatusBadge({ status }: { status: SalesOrderStatus }) {
+function StatusBadge({status}: { status: SalesOrderStatus }) {
     const styles = {
         COMPLETED: 'bg-blue-100 text-blue-700 border border-blue-200',
         REFUNDED: 'bg-rose-100 text-rose-700 border border-rose-200',
@@ -109,6 +110,10 @@ export default function SalesOrderListPage() {
 
     const orders = pageData?.content || [];
 
+    if (isLoading) {
+        return <Loading/>;
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-6">
             <div className="mx-auto max-w-7xl">
@@ -137,100 +142,91 @@ export default function SalesOrderListPage() {
                     <table className="w-full text-left border-collapse">
                         {/* 헤더 */}
                         <thead className="bg-slate-50 border-b border-gray-100">
-                            <tr>
-                                <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase">
-                                    주문번호
-                                </th>
-                                <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase">
-                                    테이블
-                                </th>
-                                <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase">
-                                    주문일시
-                                </th>
-                                <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase text-right">
-                                    금액
-                                </th>
-                                <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase text-center">
-                                    상태
-                                </th>
-                                <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase text-right">
-                                    관리
-                                </th>
-                            </tr>
+                        <tr>
+                            <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase">
+                                주문번호
+                            </th>
+                            <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase">
+                                테이블
+                            </th>
+                            <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase">
+                                주문일시
+                            </th>
+                            <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase text-right">
+                                금액
+                            </th>
+                            <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase text-center">
+                                상태
+                            </th>
+                            <th className="px-6 py-4 text-sm font-bold text-slate-500 uppercase text-right">
+                                관리
+                            </th>
+                        </tr>
                         </thead>
 
                         {/* 바디 */}
                         <tbody className="divide-y divide-gray-50">
-                            {isLoading ? (
-                                <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="px-6 py-10 text-center text-gray-400"
-                                    >
-                                        주문 목록을 불러오는 중...
+                        {orders.length > 0 ? (
+                            orders.map((order) => (
+                                <tr
+                                    key={order.orderPublicId}
+                                    className="hover:bg-slate-50 transition-colors group"
+                                >
+                                    {/* 주문번호 */}
+                                    <td className="px-6 py-4 font-medium text-slate-900">
+                                        <div className="text-sm">
+                                            {order.orderPublicId.substring(0, 8)}...
+                                        </div>
+                                    </td>
+
+                                    {/* 테이블 */}
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm font-semibold text-slate-700">
+                                            {order.tableCode}
+                                        </div>
+                                    </td>
+
+                                    {/* 주문일시 */}
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm text-slate-600">
+                                            {formatDateTime(order.orderedAt)}
+                                        </div>
+                                    </td>
+
+                                    {/* 금액 */}
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="text-sm font-bold text-black-400">
+                                            {formatAmount(order.totalAmount)}원
+                                        </div>
+                                    </td>
+
+                                    {/* 상태 */}
+                                    <td className="px-6 py-4 text-center">
+                                        <StatusBadge status={order.status}/>
+                                    </td>
+
+                                    {/* 관리 버튼 */}
+                                    <td className="px-6 py-4 text-right">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleViewDetail(order)}
+                                            className="rounded-xl bg-gray-700 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-300 transition-colors"
+                                        >
+                                            상세
+                                        </button>
                                     </td>
                                 </tr>
-                            ) : orders.length > 0 ? (
-                                orders.map((order) => (
-                                    <tr
-                                        key={order.orderPublicId}
-                                        className="hover:bg-slate-50 transition-colors group"
-                                    >
-                                        {/* 주문번호 */}
-                                        <td className="px-6 py-4 font-medium text-slate-900">
-                                            <div className="text-sm">
-                                                {order.orderPublicId.substring(0, 8)}...
-                                            </div>
-                                        </td>
-
-                                        {/* 테이블 */}
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-semibold text-slate-700">
-                                                {order.tableCode}
-                                            </div>
-                                        </td>
-
-                                        {/* 주문일시 */}
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-slate-600">
-                                                {formatDateTime(order.orderedAt)}
-                                            </div>
-                                        </td>
-
-                                        {/* 금액 */}
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="text-sm font-bold text-indigo-600">
-                                                {formatAmount(order.totalAmount)}원
-                                            </div>
-                                        </td>
-
-                                        {/* 상태 */}
-                                        <td className="px-6 py-4 text-center">
-                                            <StatusBadge status={order.status} />
-                                        </td>
-
-                                        {/* 관리 버튼 */}
-                                        <td className="px-6 py-4 text-right">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleViewDetail(order)}
-                                                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
-                                            >
-                                                상세
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td
-                                        colSpan={6}
-                                        className="px-6 py-10 text-center text-gray-400"
-                                    >
-                                        주문 내역이 없습니다.
-                                    </td>
-                                </tr>
-                            )}
+                            ))
+                        ) : (
+                            <tr>
+                                <td
+                                    colSpan={6}
+                                    className="px-6 py-10 text-center text-gray-400"
+                                >
+                                    주문 내역이 없습니다.
+                                </td>
+                            </tr>
+                        )}
                         </tbody>
                     </table>
 
@@ -242,7 +238,7 @@ export default function SalesOrderListPage() {
                                 onClick={() => setPage(page - 1)}
                                 className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
-                                <ChevronLeft className="w-5 h-5" />
+                                <ChevronLeft className="w-5 h-5"/>
                             </button>
                             <span className="text-sm font-bold text-gray-600">
                                 {pageData.page + 1} / {pageData.totalPages}
@@ -252,7 +248,7 @@ export default function SalesOrderListPage() {
                                 onClick={() => setPage(page + 1)}
                                 className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             >
-                                <ChevronRight className="w-5 h-5" />
+                                <ChevronRight className="w-5 h-5"/>
                             </button>
                         </div>
                     )}

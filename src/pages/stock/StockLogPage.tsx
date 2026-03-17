@@ -2,6 +2,7 @@ import React, {useState, useEffect, useCallback} from 'react';
 import type {StockLogResponse, TransactionType, StockLogSearchCondition, ReferenceType} from '@/types/stock/stockLog';
 import {getStockLogs} from '@/api/stock/stock.ts';
 import {requireStorePublicId} from "@/utils/store.ts";
+import Loading from "@/components/loading/Loading";
 
 const StockLogPage: React.FC = () => {
     const storePublicId = requireStorePublicId();
@@ -80,6 +81,10 @@ const StockLogPage: React.FC = () => {
         fetchLogs(0);
     }, [fetchLogs]);
 
+    if (loading && currentPage === 0) {
+        return <Loading />;
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <div className="mx-auto w-full max-w-6xl px-6 py-8 flex flex-col flex-1">
@@ -154,14 +159,7 @@ const StockLogPage: React.FC = () => {
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                            {loading && currentPage === 0 ? (
-                                <tr>
-                                    <td colSpan={6}
-                                        className="py-20 text-center text-gray-400 font-bold animate-pulse">데이터를 로드하고
-                                        있습니다...
-                                    </td>
-                                </tr>
-                            ) : stockHistory.length === 0 ? (
+                            {stockHistory.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="py-20 text-center text-gray-400 font-bold">조회된 내역이
                                         없습니다.

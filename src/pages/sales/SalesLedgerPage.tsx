@@ -12,6 +12,7 @@ import type {
     SalesLedgerOrderType,
     SalesLedgerTotalSummaryResponse,
 } from '@/types/sales/salesLedger.ts';
+import Loading from '@/components/loading/Loading';
 
 const KST_OFFSET = '+09:00';
 
@@ -165,6 +166,10 @@ export default function SalesLedgerPage() {
 
     const monthLabel = `${monthCursor.getFullYear()}.${String(monthCursor.getMonth() + 1).padStart(2, '0')}`;
 
+    if (isLoading) {
+        return <Loading />;
+    }
+
     return (
         <div className="min-h-screen bg-slate-50">
             <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-6 py-8 lg:grid-cols-[280px_1fr]">
@@ -261,9 +266,7 @@ export default function SalesLedgerPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {isLoading ? (
-                                        <tr><td className="px-3 py-8 text-center text-sm text-slate-400" colSpan={5}>불러오는 중...</td></tr>
-                                    ) : orders.length === 0 ? (
+                                    {orders.length === 0 ? (
                                         <tr><td className="px-3 py-8 text-center text-sm text-slate-400" colSpan={5}>조회 결과가 없습니다.</td></tr>
                                     ) : (
                                         orders.map((order) => (

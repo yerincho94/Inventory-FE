@@ -4,7 +4,6 @@ import {
     Plus,
     Edit3,
     Trash2,
-    Loader2,
     AlertCircle,
     Save,
     X,
@@ -21,6 +20,7 @@ import type {
     IngredientStatus,
 } from '@/types/reference/ingredient';
 import { requireStorePublicId } from '@/utils/store.ts';
+import Loading from '@/components/loading/Loading';
 
 const INGREDIENT_UNITS: IngredientUnit[] = ['EA', 'G', 'ML'];
 const INGREDIENT_STATUS: IngredientStatus[] = ['ACTIVE', 'INACTIVE'];
@@ -167,159 +167,156 @@ export default function IngredientPage() {
         }
     };
 
-    const renderListView = () => (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6 pt-10">
-            <div className="mb-8">
-                <h1 className="text-3xl font-black tracking-tight text-gray-900">재료 관리</h1>
-                <p className="mt-3 text-sm text-gray-500">매장의 식재료 마스터 데이터를 관리하고 알림 임계치를 설정하세요.</p>
-            </div>
+    const renderListView = () => {
+        if (isLoading) {
+            return <Loading />;
+        }
 
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                <div className="relative w-full lg:w-96 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors" size={18} />
-                    <input
-                        type="text"
-                        placeholder="식재료 명칭으로 검색..."
-                        className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black focus:outline-none bg-white text-gray-900 placeholder:text-gray-400 transition-all shadow-sm"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+        return (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6 pt-10">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-black tracking-tight text-gray-900">재료 관리</h1>
+                    <p className="mt-3 text-sm text-gray-500">매장의 식재료 마스터 데이터를 관리하고 알림 임계치를 설정하세요.</p>
                 </div>
 
-                <button
-                    onClick={() => setView('CREATE')}
-                    className="w-full lg:w-auto bg-black text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition flex items-center justify-center gap-2 font-semibold shadow-sm"
-                >
-                    <Plus size={18} />
-                    식재료 추가
-                </button>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 px-6 py-4 border-b border-gray-200 bg-white">
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900">식재료 목록</h2>
-                        <p className="text-sm text-gray-500 mt-1">{pageLabel}</p>
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div className="relative w-full lg:w-96 group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors" size={18} />
+                        <input
+                            type="text"
+                            placeholder="식재료 명칭으로 검색..."
+                            className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-black focus:outline-none bg-white text-gray-900 placeholder:text-gray-400 transition-all shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                     </div>
 
-                    <div className="text-sm text-gray-500">
-                        페이지 {totalPages === 0 ? 0 : page + 1} / {totalPages}
-                    </div>
+                    <button
+                        onClick={() => setView('CREATE')}
+                        className="w-full lg:w-auto bg-black text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition flex items-center justify-center gap-2 font-semibold shadow-sm"
+                    >
+                        <Plus size={18} />
+                        식재료 추가
+                    </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    식재료명
-                                </th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    단위
-                                </th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    알림 임계치
-                                </th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    상태
-                                </th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">
-                                    관리
-                                </th>
-                            </tr>
-                        </thead>
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 px-6 py-4 border-b border-gray-200 bg-white">
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-900">식재료 목록</h2>
+                            <p className="text-sm text-gray-500 mt-1">{pageLabel}</p>
+                        </div>
 
-                        <tbody className="divide-y divide-gray-100">
-                            {isLoading ? (
+                        <div className="text-sm text-gray-500">
+                            페이지 {totalPages === 0 ? 0 : page + 1} / {totalPages}
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Loader2 className="animate-spin text-black" size={24} />
-                                            데이터를 불러오는 중입니다...
-                                        </div>
-                                    </td>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        식재료명
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        단위
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        알림 임계치
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        상태
+                                    </th>
+                                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">
+                                        관리
+                                    </th>
                                 </tr>
-                            ) : ingredients.length > 0 ? (
-                                ingredients.map((item) => (
-                                    <tr
-                                        key={item.ingredientPublicId}
-                                        className="hover:bg-gray-50 transition-colors group"
-                                    >
-                                        <td className="px-6 py-4 font-medium text-gray-900">
-                                            {item.name}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">
-                                            {UNIT_LABELS[item.unit]}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 font-mono">
-                                            {item.lowStockThreshold?.toLocaleString() ?? '-'}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <StatusBadge status={item.status} />
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => {
-                                                        setCurrentIngredient(item);
-                                                        setView('EDIT');
-                                                    }}
-                                                    className="p-2 text-green-700 hover:bg-green-50 rounded-lg border border-transparent hover:border-green-200 transition-all text-xs flex items-center gap-1"
-                                                    title="수정"
-                                                >
-                                                    <Edit3 size={14} />
-                                                    수정
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(item.ingredientPublicId)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-all text-xs flex items-center gap-1"
-                                                    title="삭제"
-                                                >
-                                                    <Trash2 size={14} />
-                                                    삭제
-                                                </button>
+                            </thead>
+
+                            <tbody className="divide-y divide-gray-100">
+                                {ingredients.length > 0 ? (
+                                    ingredients.map((item) => (
+                                        <tr
+                                            key={item.ingredientPublicId}
+                                            className="hover:bg-gray-50 transition-colors group"
+                                        >
+                                            <td className="px-6 py-4 font-medium text-gray-900">
+                                                {item.name}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                                {UNIT_LABELS[item.unit]}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 font-mono">
+                                                {item.lowStockThreshold?.toLocaleString() ?? '-'}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <StatusBadge status={item.status} />
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => {
+                                                            setCurrentIngredient(item);
+                                                            setView('EDIT');
+                                                        }}
+                                                        className="p-2 text-green-700 hover:bg-green-50 rounded-lg border border-transparent hover:border-green-200 transition-all text-xs flex items-center gap-1"
+                                                        title="수정"
+                                                    >
+                                                        <Edit3 size={14} />
+                                                        수정
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(item.ingredientPublicId)}
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition-all text-xs flex items-center gap-1"
+                                                        title="삭제"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        삭제
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-20 text-center text-gray-500 font-bold">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <AlertCircle size={40} className="text-gray-300" />
+                                                데이터 검색 결과가 없습니다.
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-20 text-center text-gray-500 font-bold">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <AlertCircle size={40} className="text-gray-300" />
-                                            데이터 검색 결과가 없습니다.
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
-                    <button
-                        onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
-                        disabled={page === 0 || isLoading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
-                    >
-                        이전
-                    </button>
-
-                    <div className="text-sm text-gray-500">
-                        {totalPages === 0 ? 0 : page + 1} / {totalPages}
+                                )}
+                            </tbody>
+                        </table>
                     </div>
 
-                    <button
-                        onClick={() => setPage((prev) => (hasNext ? prev + 1 : prev))}
-                        disabled={!hasNext || isLoading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
-                    >
-                        다음
-                    </button>
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
+                        <button
+                            onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+                            disabled={page === 0 || isLoading}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                        >
+                            이전
+                        </button>
+
+                        <div className="text-sm text-gray-500">
+                            {totalPages === 0 ? 0 : page + 1} / {totalPages}
+                        </div>
+
+                        <button
+                            onClick={() => setPage((prev) => (hasNext ? prev + 1 : prev))}
+                            disabled={!hasNext || isLoading}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                        >
+                            다음
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div >
-    );
+        );
+    };
 
     const renderFormView = (mode: 'CREATE' | 'EDIT') => {
         return (

@@ -31,6 +31,7 @@ import {
     PackageSearch
 } from 'lucide-react';
 import type { PageResponse } from '@/types/common/common';
+import Loading from '@/components/loading/Loading';
 
 function StatusBadge({ status }: { status: PurchaseOrderStatus }) {
     const styles = {
@@ -303,6 +304,10 @@ export default function PurchaseOrderListPage() {
     const formatCurrency = (amount: number): string => {
         return `₩${amount.toLocaleString('ko-KR')}`;
     };
+
+    if (isLoading && !pageData) {
+        return <Loading />;
+    }
 
     return (
         <>

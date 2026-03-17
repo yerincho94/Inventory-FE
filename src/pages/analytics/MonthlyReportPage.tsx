@@ -13,6 +13,7 @@ import {
 } from '@/api/analytics/report.ts';
 import type { ReportSummaryResponse } from '@/types/analytics/report.ts';
 import { WASTE_REASON_LABELS } from '@/types/analytics/report.ts';
+import Loading from '@/components/loading/Loading';
 
 function getPreviousYearMonth(): string {
     const d = new Date();
@@ -89,6 +90,10 @@ export default function MonthlyReportPage() {
         totalQuantity: m.totalQuantity,
     })) ?? [];
 
+    if (isLoading || isDownloading) {
+        return <Loading />;
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-6">
             <div className="mx-auto max-w-7xl">
@@ -126,16 +131,8 @@ export default function MonthlyReportPage() {
                     </div>
                 )}
 
-                {/* ── 로딩 ── */}
-                {isLoading && (
-                    <div className="flex flex-col items-center justify-center py-32 text-slate-400">
-                        <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin mb-4" />
-                        <p className="text-sm font-medium">리포트 데이터를 불러오는 중...</p>
-                    </div>
-                )}
-
                 {/* ── 데이터 영역 ── */}
-                {!isLoading && summaryData && (
+                {summaryData && (
                     <>
                         {/* KPI 카드 4개 */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

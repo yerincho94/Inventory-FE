@@ -13,7 +13,6 @@ import {
     Search,
     Plus,
     Trash2,
-    Loader2,
     Edit3,
     ChevronLeft,
     Save,
@@ -23,6 +22,7 @@ import {
 
 import { getAllIngredients, type IngredientResponse } from '@/api';
 import { requireStorePublicId } from '@/utils/store.ts';
+import Loading from '@/components/loading/Loading';
 
 /**
  * 폼에서 사용하는 레시피 Row
@@ -254,6 +254,10 @@ const MenuPage: React.FC = () => {
         );
     };
 
+    if (isLoading) {
+        return <Loading />;
+    }
+
     return (
         <div className="bg-white min-h-screen text-slate-800 font-sans pt-10">
 
@@ -288,12 +292,7 @@ const MenuPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {isLoading ? (
-                            <div className="flex flex-col items-center justify-center py-20 gap-3">
-                                <Loader2 className="animate-spin text-black" size={32} />
-                                <p className="text-slate-400 font-bold">메뉴 정보를 불러오는 중입니다...</p>
-                            </div>
-                        ) : filteredMenus.length > 0 ? (
+                        {filteredMenus.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredMenus.map((menu) => (
                                     <div

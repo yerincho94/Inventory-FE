@@ -20,6 +20,7 @@ import type { VendorResponse, VendorStatus } from '@/types/reference/vendor';
 import type { PageResponse, ApiError } from '@/types/common/common';
 import { requireStorePublicId } from '@/utils/store.ts';
 import axios from 'axios';
+import Loading from '@/components/loading/Loading';
 
 const StatusBadge = ({ status }: { status: VendorStatus }) => {
     const styles = {
@@ -139,6 +140,10 @@ export default function VendorPage() {
 
     const vendors = useMemo(() => pageData?.content || [], [pageData]);
 
+    if (isLoading) {
+        return <Loading />;
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 py-8 px-6">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -213,13 +218,7 @@ export default function VendorPage() {
                                     </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
-                                    {isLoading ? (
-                                        <tr>
-                                            <td colSpan={7} className="px-6 py-10 text-center text-gray-400">
-                                                데이터 로딩 중...
-                                            </td>
-                                        </tr>
-                                    ) : vendors.length > 0 ? (
+                                    {vendors.length > 0 ? (
                                         vendors.map((item) => (
                                             <tr key={item.vendorPublicId} className="hover:bg-gray-50 transition-colors group">
                                                 <td className="px-6 py-4 font-medium text-gray-900">{item.name}</td>

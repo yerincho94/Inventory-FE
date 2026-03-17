@@ -13,6 +13,7 @@ import {
 import type {
     SalesSummaryResponse, SalesTrendData, SalesPeakData, MenuRankingData, TimeInterval
 } from '@/types/analytics/salesAnalytics.ts';
+import Loading from '@/components/loading/Loading';
 
 /** 날짜 포맷팅 (YYYY-MM-DD) */
 function formatDate(date: Date): string {
@@ -195,6 +196,10 @@ export default function SalesAnalyticsPage() {
             </div>
         );
     };
+
+    if (isLoading) {
+        return <Loading />;
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-6">

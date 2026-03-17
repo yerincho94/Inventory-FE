@@ -7,6 +7,7 @@ import {
     WasteAnalysisChart
 } from '@/components/charts';
 import {requireStorePublicId} from "@/utils/store.ts";
+import Loading from '@/components/loading/Loading';
 
 export default function StockAnalyticsPage() {
     const storePublicId = requireStorePublicId();
@@ -44,15 +45,6 @@ export default function StockAnalyticsPage() {
     const totalWasteAmount = data.reduce((sum, item) => sum + (item.totalWasteAmount || 0), 0);
 
     const renderContent = () => {
-        if (loading) {
-            return (
-                <div
-                    className="mt-10 rounded-3xl border border-gray-200 bg-white p-20 text-center text-gray-400 font-bold animate-pulse">
-                    데이터를 분석하는 중입니다...
-                </div>
-            );
-        }
-
         if (error) {
             return (
                 <div className="mt-10 rounded-3xl border-2 border-red-200 bg-red-50 p-20 text-center">
@@ -135,6 +127,10 @@ export default function StockAnalyticsPage() {
             </div>
         );
     };
+
+    if (loading) {
+        return <Loading />;
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">

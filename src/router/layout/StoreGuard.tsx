@@ -1,10 +1,11 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
-import { getMyStores } from '@/api/store/store.ts';
-import { getStorePublicId, setStorePublicId } from '@/utils/store';
-import { getAccessToken } from '@/utils/auth';
-import type { MyStoreResponse } from '@/types';
+import {useEffect, useState} from 'react';
+import {Outlet, Navigate, useLocation} from 'react-router-dom';
+import {getMyStores} from '@/api/store/store.ts';
+import {getStorePublicId, setStorePublicId} from '@/utils/store';
+import {getAccessToken} from '@/utils/auth';
+import type {MyStoreResponse} from '@/types';
+import Loading from '@/components/loading/Loading'; // 공통 로딩 컴포넌트 추가
 
 type GuardState = 'loading' | 'ok' | 'onboarding' | 'login' | 'error';
 
@@ -102,23 +103,17 @@ export default function StoreGuard() {
         };
     }, []);
 
+    // 로딩 상태일 때 새로운 Loading 컴포넌트 반환
     if (state === 'loading') {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <div className="text-center">
-                    <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
-                    <p className="mt-4 text-sm text-slate-500">매장 정보를 불러오는 중...</p>
-                </div>
-            </div>
-        );
+        return <Loading/>;
     }
 
     if (state === 'onboarding') {
-        return <Navigate to="/onboarding" replace state={{ from: location }} />;
+        return <Navigate to="/onboarding" replace state={{from: location}}/>;
     }
 
     if (state === 'login') {
-        return <Navigate to="/login" replace state={{ from: location }} />;
+        return <Navigate to="/login" replace state={{from: location}}/>;
     }
 
     if (state === 'error') {
@@ -143,5 +138,5 @@ export default function StoreGuard() {
         );
     }
 
-    return <Outlet />;
+    return <Outlet/>;
 }

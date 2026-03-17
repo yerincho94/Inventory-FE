@@ -2,8 +2,8 @@ import {useState, useEffect, useMemo} from 'react';
 import {getMyStores} from '@/api/store/store.ts';
 import * as SalesApi from '@/api/analytics/salesAnalytics';
 import {getStockAnalysis} from '@/api/analytics/stockAnalytics';
-import type {MyStoreResponse} from '@/types';
-import type {SalesSummaryResponse, SalesTrendData} from '@/types/analytics/salesAnalytics.ts';
+import type {MyStoreResponse, SalesPeakData} from '@/types';
+import type {SalesSummaryResponse} from '@/types/analytics/salesAnalytics.ts';
 import type {StockAnalyticResponse} from '@/types/analytics/stockAnalytics.ts';
 import {
     TrendingUp, Package, Users, Calendar,
@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 
 import Loading from '@/components/loading/Loading';
+import {getStorePublicId, requireStorePublicId} from "@/utils/store.ts";
 
 // --- 1. 타입 인터페이스 정의 ---
 
@@ -240,33 +241,55 @@ const StockLevelChart = ({data}: { data: StockAnalyticResponse[] }) => {
 const DashboardPage = () => {
     const [currentStore, setCurrentStore] = useState<MyStoreResponse | null>(null);
     const [summary, setSummary] = useState<SalesSummaryResponse | null>(null);
-    const [trend, setTrend] = useState<SalesTrendData[]>([]);
+    const [peak, setPeak] = useState<SalesPeakData[]>([]);
     const [stockAnalysis, setStockAnalysis] = useState<StockAnalyticResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const initDashboard = async () => {
             try {
-                const storesData = await getMyStores();
-                if (storesData.length > 0) {
-                    const store = storesData[0];
-                    setCurrentStore(store);
+                setIsLoading(true);
+
+                let storeId: string | null = null;
+                let targetStore: MyStoreResponse | undefined = undefined;
+
+                const existingId = getStorePublicId();
+
+                if (!existingId) {
+                    const storesData = await getMyStores();
+                    if (storesData && storesData.length > 0) {
+                        targetStore = storesData[0];
+                        storeId = targetStore.storePublicId;
+                        setCurrentStore(targetStore);
+                    }
+                } else {
+                    storeId = requireStorePublicId();
+                    const storesData = await getMyStores();
+                    targetStore = storesData.find(s => s.storePublicId === storeId);
+                }
+
+                if (storeId && targetStore) {
+                    setCurrentStore(targetStore);
                     const now = new Date();
+                    const todayStart = new Date();
+                    todayStart.setHours(9, 0, 0, 0);
+                    if (now < todayStart) todayStart.setDate(todayStart.getDate() - 1);
                     const oneMonthAgo = new Date();
                     oneMonthAgo.setMonth(now.getMonth() - 1);
 
-                    const [summaryData, trendData, stockData] = await Promise.all([
-                        SalesApi.getSalesSummary(store.storePublicId, oneMonthAgo, now),
-                        SalesApi.getSalesTrend(store.storePublicId, oneMonthAgo, now),
-                        getStockAnalysis(store.storePublicId)
+                    // SalesApi 호출 시 storeId 전달
+                    const [summaryData, peakData, stockData] = await Promise.all([
+                        SalesApi.getSalesSummary(storeId, oneMonthAgo, now),
+                        SalesApi.getSalesPeak(storeId, todayStart, now),
+                        getStockAnalysis(storeId)
                     ]);
 
                     setSummary(summaryData);
-                    setTrend(trendData);
+                    setPeak(peakData);
                     setStockAnalysis(stockData);
                 }
             } catch (error) {
-                console.error('데이터 호출 실패:', error);
+                console.error('대시보드 초기화 실패:', error);
             } finally {
                 setTimeout(() => setIsLoading(false), 500);
             }
@@ -274,14 +297,23 @@ const DashboardPage = () => {
         initDashboard();
     }, []);
 
-    const chartData = useMemo(() => trend.map(item => ({
-        ...item,
-        amount: item.totalAmount,
-        time: item.date.includes(' ') ? item.date.split(' ')[1].substring(0, 5) : item.date
-    })), [trend]);
+    const todayDayOfWeek = new Date().getDay() || 7;
+
+    const chartData = useMemo(() => {
+        return peak
+            .filter((item) => item.dayOfWeek === todayDayOfWeek)
+            .sort((a, b) => a.hour - b.hour)
+            .map((item) => ({
+                ...item,
+                time: `${item.hour}시`,
+                orderCount: item.orderCount,
+                // Peak 데이터에 금액이 없다면 주문당 평균 단가를 곱해 가상 매출액 생성 (선택사항)
+                amount: item.orderCount * (summary?.averageOrderAmount || 10000)
+            }));
+    }, [peak, todayDayOfWeek, summary]);
 
     if (isLoading || !currentStore) {
-        return <div className="flex min-h-screen items-center justify-center bg-white"><Loading/></div>;
+        return <Loading />;
     }
 
     return (
@@ -289,8 +321,8 @@ const DashboardPage = () => {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
-                        <h1 className="text-sm font-bold text-indigo-600 flex items-center gap-1"><Store
-                            className="h-6.5 w-6.5"/> {currentStore.storeName}</h1>
+                        <h1 className="text-lg font-bold text-gray-400 flex items-center gap-1"><Store
+                            className="h-10 w-10"/> {currentStore.storeName}</h1>
                     </div>
                     <div
                         className="flex items-center gap-2 text-sm font-bold text-gray-400 bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm">
@@ -308,7 +340,7 @@ const DashboardPage = () => {
                     <Card title="주문 평균 매출"
                           value={summary ? `${Math.floor(summary.averageOrderAmount).toLocaleString()}원` : '0원'}
                           icon={<Users/>} color="green"/>
-                    <Card title="Orders" value={summary ? `${summary.totalOrderCount}건` : '0건'} icon={<ChevronRight/>}
+                    <Card title="주문" value={summary ? `${summary.totalOrderCount}건` : '0건'} icon={<ChevronRight/>}
                           color="blue"/>
                 </div>
 
@@ -316,14 +348,14 @@ const DashboardPage = () => {
                     <div className="lg:col-span-2 rounded-3xl bg-white p-8 shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                                <TrendingUp className="h-5 w-5 text-indigo-600"/> 매출 트렌드 분석
+                                <TrendingUp className="h-5 w-5 text-indigo-600"/> 실시간 매출 분석
                             </h3>
                             <span
                                 className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded">UNIT: 원</span>
                         </div>
                         <div className="h-[320px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData} margin={{top: 10, right: 10, left: 0, bottom: 0}}>
+                                <AreaChart data={chartData} margin={{top: 10, right: 10, left: 10, bottom: 30}}>
                                     <defs>
                                         {/* 매출 그래프에 어울리는 인디고-바이올렛 그라데이션 */}
                                         <linearGradient id="colorHourlySales" x1="0" y1="0" x2="0" y2="1">
@@ -337,12 +369,13 @@ const DashboardPage = () => {
 
                                     <XAxis
                                         dataKey="time"
+                                        height={50}
                                         tick={{fontSize: 11, fontWeight: 700, fill: '#94a3b8'}}
                                         axisLine={false}
                                         tickLine={false}
-                                        minTickGap={20}
-                                        // "09:00" 형태로 데이터가 들어올 때 간격을 조절함
-                                        interval="preserveStartEnd"
+                                        dy={10}
+                                        // 시간 데이터가 24개나 되므로, 겹치지 않게 적절히 조절합니다.
+                                        interval={2} // 3시간 단위로 표시 (0시, 3시, 6시...)
                                     />
 
                                     <YAxis
@@ -410,7 +443,7 @@ const DashboardPage = () => {
                     </div>
 
                     <div
-                        className="rounded-3xl bg-indigo-600 p-8 shadow-lg shadow-indigo-100 text-white flex flex-col justify-between">
+                        className="rounded-3xl bg-red-400 p-8 shadow-lg shadow-indigo-100 text-white flex flex-col justify-between">
                         <div>
                             <Package className="h-10 w-10 mb-4 opacity-50"/>
                             <h3 className="text-xl font-black mb-2">재고 최적화 팁</h3>
@@ -422,10 +455,6 @@ const DashboardPage = () => {
                             }).length}건 있습니다. 해당 재료를 우선 소진하세요.
                             </p>
                         </div>
-                        <button
-                            className="mt-6 w-full py-3 bg-white text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-50 transition-colors">
-                            상세 리포트 보기
-                        </button>
                     </div>
                 </div>
             </div>
