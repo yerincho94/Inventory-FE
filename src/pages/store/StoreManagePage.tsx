@@ -1,408 +1,401 @@
-import { useState, useEffect } from 'react';
-import type { FormEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { createStore, getMyStores, setDefaultStore } from '@/api/store/store.ts';
-import { acceptInvitation } from '@/api/store/invitation.ts';
-import { setStorePublicId } from '@/utils/store.ts';
-import type { MyStoreResponse, StoreManageTabType } from '@/types';
-import { Store as StoreIcon, Star, Loader2 } from 'lucide-react';
+import Loading from '@/components/loading/Loading';
+import {useState, useEffect} from 'react';
+import type {FormEvent} from 'react';
+import {useNavigate, useSearchParams} from 'react-router-dom';
+import {createStore, getMyStores, setDefaultStore} from '@/api/store/store.ts';
+import {acceptInvitation} from '@/api/store/invitation.ts';
+import {setStorePublicId} from '@/utils/store.ts';
+import type {MyStoreResponse, StoreManageTabType} from '@/types';
+import {Store as StoreIcon, Star, Loader2} from 'lucide-react';
 
 const StoreManagePage = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [stores, setStores] = useState<MyStoreResponse[]>([]);
-  const [_currentStore, setCurrentStore] = useState<MyStoreResponse | null>(null);
-  const [loadingStoreId, setLoadingStoreId] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const [stores, setStores] = useState<MyStoreResponse[]>([]);
+    const [_currentStore, setCurrentStore] = useState<MyStoreResponse | null>(null);
 
-  // 쿼리 파라미터에서 초기 탭 설정
-  const initialTab = (searchParams.get('tab') as StoreManageTabType) || 'list';
-  const [activeTab, setActiveTab] = useState<StoreManageTabType>(initialTab);
+    // 1. 처음 페이지 진입 시 데이터 조회를 위한 로딩 상태
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // 매장 목록 조회 (ACTIVE만 표시)
-  useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const storesData = await getMyStores();
-        // ACTIVE 상태의 매장만 필터링
-        const activeStores = storesData.filter((s) => s.memberStatus === 'ACTIVE');
-        setStores(activeStores);
-        const defaultStore = activeStores.find((s) => s.isDefault);
-        if (defaultStore) {
-          setCurrentStore(defaultStore);
-        } else if (activeStores.length > 0) {
-          setCurrentStore(activeStores[0]);
+    // 개별 버튼 및 탭 내 액션 로딩 상태 (기존 유지)
+    const [loadingStoreId, setLoadingStoreId] = useState<string | null>(null);
+    const [createLoading, setCreateLoading] = useState(false);
+    const [joinLoading, setJoinLoading] = useState(false);
+
+    // 쿼리 파라미터에서 초기 탭 설정
+    const initialTab = (searchParams.get('tab') as StoreManageTabType) || 'list';
+    const [activeTab, setActiveTab] = useState<StoreManageTabType>(initialTab);
+
+    // 매장 목록 조회 (페이지 첫 진입 시)
+    useEffect(() => {
+        const fetchStores = async () => {
+            setIsInitialLoading(true); // 전체 화면 로딩 시작
+            try {
+                const storesData = await getMyStores();
+                const activeStores = storesData.filter((s) => s.memberStatus === 'ACTIVE');
+                setStores(activeStores);
+                const defaultStore = activeStores.find((s) => s.isDefault);
+                if (defaultStore) {
+                    setCurrentStore(defaultStore);
+                } else if (activeStores.length > 0) {
+                    setCurrentStore(activeStores[0]);
+                }
+            } catch (error) {
+                console.error('Failed to fetch stores:', error);
+            } finally {
+                setIsInitialLoading(false); // 데이터 불러오기 완료 후 로딩 종료
+            }
+        };
+        fetchStores();
+    }, []);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab') as StoreManageTabType;
+        if (tab && ['list', 'create', 'join'].includes(tab)) {
+            setActiveTab(tab);
         }
-      } catch (error) {
-        console.error('Failed to fetch stores:', error);
-      }
+    }, [searchParams]);
+
+    // 매장 생성 관련 상태
+    const [storeName, setStoreName] = useState('');
+    const [businessNumber, setBusinessNumber] = useState('');
+    const [createError, setCreateError] = useState('');
+
+    // 초대 코드 관련 상태
+    const [inviteCode, setInviteCode] = useState('');
+    const [joinError, setJoinError] = useState('');
+
+    // 매장 생성 핸들러 (버튼 내 로딩만 유지)
+    const handleCreateStore = async (e: FormEvent) => {
+        e.preventDefault();
+        setCreateError('');
+
+        if (!storeName.trim()) {
+            setCreateError('매장명을 입력해주세요.');
+            return;
+        }
+
+        if (!businessNumber.trim() || !/^\d{10}$/.test(businessNumber)) {
+            setCreateError('사업자등록번호는 10자리 숫자여야 합니다.');
+            return;
+        }
+
+        setCreateLoading(true);
+        try {
+            const response = await createStore({
+                name: storeName,
+                businessRegistrationNumber: businessNumber
+            });
+            await setDefaultStore(response.storePublicId);
+            navigate('/dashboard', {replace: true});
+        } catch (err: any) {
+            setCreateError(err.response?.data?.message || '매장 생성에 실패했습니다.');
+        } finally {
+            setCreateLoading(false);
+        }
     };
-    fetchStores();
-  }, []);
 
-  useEffect(() => {
-    const tab = searchParams.get('tab') as StoreManageTabType;
-    if (tab && ['list', 'create', 'join'].includes(tab)) {
-      setActiveTab(tab);
+    // 초대 코드 가입 핸들러 (버튼 내 로딩만 유지)
+    const handleJoinWithCode = async (e: FormEvent) => {
+        e.preventDefault();
+        setJoinError('');
+
+        if (!inviteCode.trim()) {
+            setJoinError('초대 코드를 입력해주세요.');
+            return;
+        }
+
+        setJoinLoading(true);
+        try {
+            const response = await acceptInvitation({code: inviteCode});
+            const updatedStores = await getMyStores();
+            const activeStores = updatedStores.filter((s) => s.memberStatus === 'ACTIVE');
+            setStores(activeStores);
+
+            const joinedStore = activeStores.find((s) => s.storeId === response.storeId);
+            if (joinedStore) {
+                await setDefaultStore(joinedStore.storePublicId);
+            }
+            navigate('/dashboard', {replace: true});
+        } catch (err: any) {
+            if (err.response?.status === 404) {
+                setJoinError('유효하지 않은 초대 코드입니다.');
+            } else {
+                setJoinError(err.response?.data?.message || '가입에 실패했습니다.');
+            }
+        } finally {
+            setJoinLoading(false);
+        }
+    };
+
+    // 대표 매장 설정 핸들러 (버튼 내 로딩만 유지)
+    const handleSetDefaultStore = async (storePublicId: string) => {
+        setLoadingStoreId(storePublicId);
+        try {
+            await setDefaultStore(storePublicId);
+            setStorePublicId(storePublicId);
+
+            const updatedStores = await getMyStores();
+            const activeStores = updatedStores.filter((s) => s.memberStatus === 'ACTIVE');
+            setStores(activeStores);
+
+            const newDefault = activeStores.find((s) => s.storePublicId === storePublicId);
+            if (newDefault) {
+                setCurrentStore(newDefault);
+            }
+            window.dispatchEvent(new Event('defaultStoreChanged'));
+        } catch (err) {
+            console.error('Failed to set default store:', err);
+            alert('대표 매장 설정에 실패했습니다.');
+        } finally {
+            setLoadingStoreId(null);
+        }
+    };
+
+    // 초기 데이터 로딩 시에만 Loading 컴포넌트 표시
+    if (isInitialLoading) {
+        return <Loading/>;
     }
-  }, [searchParams]);
 
-  // 매장 생성
-  const [storeName, setStoreName] = useState('');
-  const [businessNumber, setBusinessNumber] = useState('');
-  const [createLoading, setCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState('');
-
-  // 초대 코드
-  const [inviteCode, setInviteCode] = useState('');
-  const [joinLoading, setJoinLoading] = useState(false);
-  const [joinError, setJoinError] = useState('');
-
-  const handleCreateStore = async (e: FormEvent) => {
-    e.preventDefault();
-    setCreateError('');
-
-    if (!storeName.trim()) {
-      setCreateError('매장명을 입력해주세요.');
-      return;
-    }
-
-    if (!businessNumber.trim() || !/^\d{10}$/.test(businessNumber)) {
-      setCreateError('사업자등록번호는 10자리 숫자여야 합니다.');
-      return;
-    }
-
-    setCreateLoading(true);
-    try {
-      const response = await createStore({
-        name: storeName,
-        businessRegistrationNumber: businessNumber
-      });
-
-      // 생성한 매장을 기본 매장으로 설정
-      await setDefaultStore(response.storePublicId);
-
-      // 대시보드로 즉시 이동
-      navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      setCreateError(err.response?.data?.message || '매장 생성에 실패했습니다.');
-    } finally {
-      setCreateLoading(false);
-    }
-  };
-
-  const handleJoinWithCode = async (e: FormEvent) => {
-    e.preventDefault();
-    setJoinError('');
-
-    if (!inviteCode.trim()) {
-      setJoinError('초대 코드를 입력해주세요.');
-      return;
-    }
-
-    setJoinLoading(true);
-    try {
-      const response = await acceptInvitation({
-        code: inviteCode
-      });
-
-      // 가입 후 매장 목록을 다시 가져옴 (ACTIVE만 필터링)
-      const updatedStores = await getMyStores();
-      const activeStores = updatedStores.filter((s) => s.memberStatus === 'ACTIVE');
-      setStores(activeStores);
-
-      // 방금 가입한 매장 찾기
-      const joinedStore = activeStores.find((s) => s.storeId === response.storeId);
-      if (joinedStore) {
-        // 가입한 매장을 기본 매장으로 설정
-        await setDefaultStore(joinedStore.storePublicId);
-      }
-
-      // 대시보드로 즉시 이동
-      navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        setJoinError('유효하지 않은 초대 코드입니다.');
-      } else {
-        setJoinError(err.response?.data?.message || '가입에 실패했습니다.');
-      }
-    } finally {
-      setJoinLoading(false);
-    }
-  };
-
-  const handleSetDefaultStore = async (storePublicId: string) => {
-    setLoadingStoreId(storePublicId);
-    try {
-      // 대표 매장 설정 API 호출
-      await setDefaultStore(storePublicId);
-
-      // localStorage에 storePublicId 저장
-      setStorePublicId(storePublicId);
-
-      // 매장 목록 다시 조회하여 UI 업데이트
-      const updatedStores = await getMyStores();
-      const activeStores = updatedStores.filter((s) => s.memberStatus === 'ACTIVE');
-      setStores(activeStores);
-
-      // 새로운 대표 매장을 currentStore로 설정
-      const newDefault = activeStores.find((s) => s.storePublicId === storePublicId);
-      if (newDefault) {
-        setCurrentStore(newDefault);
-      }
-
-      window.dispatchEvent(new Event('defaultStoreChanged'));
-    } catch (err) {
-      console.error('Failed to set default store:', err);
-      alert('대표 매장 설정에 실패했습니다.');
-    } finally {
-      setLoadingStoreId(null);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="mx-auto max-w-5xl px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-black tracking-tight text-gray-900">매장 관리</h1>
-          <p className="mt-3 text-sm text-gray-500">소속된 매장을 관리하고 새로운 매장을 추가하세요</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('list')}
-              className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
-                activeTab === 'list'
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              내 매장 목록
-            </button>
-            <button
-              onClick={() => setActiveTab('create')}
-              className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
-                activeTab === 'create'
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              새 매장 등록
-            </button>
-            <button
-              onClick={() => setActiveTab('join')}
-              className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
-                activeTab === 'join'
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              초대 코드로 가입
-            </button>
-          </nav>
-        </div>
-
-        {/* Content */}
-        <div className="rounded-lg bg-white border border-gray-200 p-6">
-          {activeTab === 'list' && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">소속 매장</h2>
-
-              {stores.length === 0 ? (
-                <div className="text-center py-12">
-                  <StoreIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-4 text-gray-600">등록된 매장이 없습니다</p>
-                  <div className="mt-6 flex gap-3 justify-center">
-                    <button
-                      onClick={() => setActiveTab('create')}
-                      className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 transition-colors"
-                    >
-                      새 매장 등록
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('join')}
-                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      초대 코드로 가입
-                    </button>
-                  </div>
+    return (
+        <div className="min-h-screen bg-gray-100 py-8">
+            <div className="mx-auto max-w-5xl px-4">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-black tracking-tight text-gray-900">매장 관리</h1>
+                    <p className="mt-3 text-sm text-gray-500">소속된 매장을 관리하고 새로운 매장을 추가하세요</p>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {stores
-                    .sort((a, b) => {
-                      // 대표 매장을 맨 위에 배치
-                      if (a.isDefault && !b.isDefault) return -1;
-                      if (!a.isDefault && b.isDefault) return 1;
-                      return 0;
-                    })
-                    .map((store: MyStoreResponse) => (
-                    <div
-                      key={store.storeId}
-                      className={`rounded-lg border-2 p-4 transition-all ${
-                        store.isDefault
-                          ? 'border-indigo-500 bg-indigo-50/50 shadow-sm'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-bold text-gray-900">{store.storeName}</h3>
-                            {store.isDefault && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
-                                <Star className="w-3 h-3 fill-current" />
+
+                {/* Tabs */}
+                <div className="mb-6 border-b border-gray-200">
+                    <nav className="-mb-px flex space-x-8">
+                        <button
+                            onClick={() => setActiveTab('list')}
+                            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
+                                activeTab === 'list'
+                                    ? 'border-black text-black'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            내 매장 목록
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('create')}
+                            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
+                                activeTab === 'create'
+                                    ? 'border-black text-black'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            새 매장 등록
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('join')}
+                            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
+                                activeTab === 'join'
+                                    ? 'border-black text-black'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                        >
+                            초대 코드로 가입
+                        </button>
+                    </nav>
+                </div>
+
+                {/* Content Area */}
+                <div className="rounded-lg bg-white border border-gray-200 p-6">
+                    {activeTab === 'list' && (
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-bold text-gray-900 mb-4">소속 매장</h2>
+
+                            {stores.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <StoreIcon className="mx-auto h-12 w-12 text-gray-400"/>
+                                    <p className="mt-4 text-gray-600">등록된 매장이 없습니다</p>
+                                    <div className="mt-6 flex gap-3 justify-center">
+                                        <button
+                                            onClick={() => setActiveTab('create')}
+                                            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 transition-colors"
+                                        >
+                                            새 매장 등록
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab('join')}
+                                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            초대 코드로 가입
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {stores
+                                        .sort((a, b) => {
+                                            if (a.isDefault && !b.isDefault) return -1;
+                                            if (!a.isDefault && b.isDefault) return 1;
+                                            return 0;
+                                        })
+                                        .map((store: MyStoreResponse) => (
+                                            <div
+                                                key={store.storeId}
+                                                className={`rounded-lg border-2 p-4 transition-all ${
+                                                    store.isDefault
+                                                        ? 'border-indigo-500 bg-indigo-50/50 shadow-sm'
+                                                        : 'border-gray-200 hover:border-gray-300'
+                                                }`}
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <h3 className="text-lg font-bold text-gray-900">{store.storeName}</h3>
+                                                            {store.isDefault && (
+                                                                <span
+                                                                    className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
+                                <Star className="w-3 h-3 fill-current"/>
                                 대표 매장
                               </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <p className="text-sm text-gray-600">
+                                                                역할: <span
+                                                                className="font-semibold">{store.myRole === 'OWNER' ? '대표' : '직원'}</span>
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 font-mono">
+                                                                사업자번호: {store.businessRegistrationNumber}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex gap-2">
+                                                        {store.isDefault ? (
+                                                            <button
+                                                                disabled
+                                                                className="rounded-lg border-2 border-indigo-500 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 cursor-default"
+                                                            >
+                                                                현재 대표 매장
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleSetDefaultStore(store.storePublicId)}
+                                                                disabled={loadingStoreId === store.storePublicId}
+                                                                className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                            >
+                                                                {loadingStoreId === store.storePublicId && (
+                                                                    <Loader2 className="w-3 h-3 animate-spin"/>
+                                                                )}
+                                                                대표 매장으로 설정
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
                             )}
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm text-gray-600">
-                              역할: <span className="font-semibold">{store.myRole === 'OWNER' ? '대표' : '직원'}</span>
-                            </p>
-                            <p className="text-xs text-gray-500 font-mono">
-                              사업자번호: {store.businessRegistrationNumber}
-                            </p>
-                          </div>
                         </div>
+                    )}
 
-                        <div className="flex gap-2">
-                          {store.isDefault ? (
+                    {activeTab === 'create' && (
+                        <form onSubmit={handleCreateStore} className="space-y-6">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900 mb-4">새 매장 등록</h2>
+                                <p className="text-sm text-gray-600 mb-6">매장 정보를 입력하여 새로운 매장을 생성하세요</p>
+                            </div>
+                            <div>
+                                <label htmlFor="storeName" className="block text-sm font-semibold text-gray-900 mb-2">
+                                    매장명 <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    id="storeName"
+                                    type="text"
+                                    value={storeName}
+                                    onChange={(e) => setStoreName(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-shadow"
+                                    placeholder="예: 서울 강남점"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="businessNumber"
+                                       className="block text-sm font-semibold text-gray-900 mb-2">
+                                    사업자등록번호 <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    id="businessNumber"
+                                    type="text"
+                                    value={businessNumber}
+                                    onChange={(e) => setBusinessNumber(e.target.value.replace(/\D/g, ''))}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-shadow font-mono"
+                                    placeholder="0000000000"
+                                    maxLength={10}
+                                />
+                                <p className="mt-2 text-xs text-gray-500">10자리 숫자를 입력해주세요</p>
+                            </div>
+                            {createError && (
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <p className="text-sm text-red-600 font-medium">{createError}</p>
+                                </div>
+                            )}
                             <button
-                              disabled
-                              className="rounded-lg border-2 border-indigo-500 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 cursor-default"
+                                type="submit"
+                                disabled={createLoading}
+                                className="w-full bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                              현재 대표 매장
+                                {createLoading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin"/>
+                                        생성 중...
+                                    </>
+                                ) : (
+                                    '매장 만들기'
+                                )}
                             </button>
-                          ) : (
+                        </form>
+                    )}
+
+                    {activeTab === 'join' && (
+                        <form onSubmit={handleJoinWithCode} className="space-y-6">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900 mb-4">초대 코드로 가입</h2>
+                                <p className="text-sm text-gray-600 mb-6">받은 초대 코드를 입력하여 매장에 참여하세요</p>
+                            </div>
+                            <div>
+                                <label htmlFor="inviteCode" className="block text-sm font-semibold text-gray-900 mb-2">
+                                    초대 코드 <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    id="inviteCode"
+                                    type="text"
+                                    value={inviteCode}
+                                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-shadow font-mono tracking-wider"
+                                    placeholder="12345678"
+                                />
+                            </div>
+                            {joinError && (
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <p className="text-sm text-red-600 font-medium">{joinError}</p>
+                                </div>
+                            )}
                             <button
-                              onClick={() => handleSetDefaultStore(store.storePublicId)}
-                              disabled={loadingStoreId === store.storePublicId}
-                              className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                type="submit"
+                                disabled={joinLoading}
+                                className="w-full bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                              {loadingStoreId === store.storePublicId && (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              )}
-                              대표 매장으로 설정
+                                {joinLoading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin"/>
+                                        처리 중...
+                                    </>
+                                ) : (
+                                    '가입하기'
+                                )}
                             </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                        </form>
+                    )}
                 </div>
-              )}
             </div>
-          )}
-
-          {activeTab === 'create' && (
-            <form onSubmit={handleCreateStore} className="space-y-6">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">새 매장 등록</h2>
-                <p className="text-sm text-gray-600 mb-6">매장 정보를 입력하여 새로운 매장을 생성하세요</p>
-              </div>
-
-              <div>
-                <label htmlFor="storeName" className="block text-sm font-semibold text-gray-900 mb-2">
-                  매장명 <span className="text-red-600">*</span>
-                </label>
-                <input
-                  id="storeName"
-                  type="text"
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-shadow"
-                  placeholder="예: 서울 강남점"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="businessNumber" className="block text-sm font-semibold text-gray-900 mb-2">
-                  사업자등록번호 <span className="text-red-600">*</span>
-                </label>
-                <input
-                  id="businessNumber"
-                  type="text"
-                  value={businessNumber}
-                  onChange={(e) => setBusinessNumber(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-shadow font-mono"
-                  placeholder="0000000000"
-                  maxLength={10}
-                />
-                <p className="mt-2 text-xs text-gray-500">10자리 숫자를 입력해주세요</p>
-              </div>
-
-              {createError && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600 font-medium">{createError}</p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={createLoading}
-                className="w-full bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {createLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    생성 중...
-                  </>
-                ) : (
-                  '매장 만들기'
-                )}
-              </button>
-            </form>
-          )}
-
-          {activeTab === 'join' && (
-            <form onSubmit={handleJoinWithCode} className="space-y-6">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">초대 코드로 가입</h2>
-                <p className="text-sm text-gray-600 mb-6">받은 초대 코드를 입력하여 매장에 참여하세요</p>
-              </div>
-
-              <div>
-                <label htmlFor="inviteCode" className="block text-sm font-semibold text-gray-900 mb-2">
-                  초대 코드 <span className="text-red-600">*</span>
-                </label>
-                <input
-                  id="inviteCode"
-                  type="text"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-shadow font-mono tracking-wider"
-                  placeholder="12345678"
-                />
-              </div>
-
-              {joinError && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600 font-medium">{joinError}</p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={joinLoading}
-                className="w-full bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {joinLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    처리 중...
-                  </>
-                ) : (
-                  '가입하기'
-                )}
-              </button>
-            </form>
-          )}
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default StoreManagePage;

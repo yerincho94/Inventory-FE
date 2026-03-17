@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { requireStorePublicId } from '@/utils/store';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
+import {requireStorePublicId} from '@/utils/store';
 import {
     confirmInboundFinal,
     confirmIngredientMapping,
     fetchInboundDetail,
     updateInboundItemNormalization,
 } from '@/api/stock/inbound.ts';
-import type { Candidate, StockInboundItemResponse, StockInboundResponse } from '@/types';
-import type { IngredientUnit } from '@/types/reference/ingredient';
+import type {Candidate, StockInboundItemResponse, StockInboundResponse} from '@/types';
+import type {IngredientUnit} from '@/types/reference/ingredient';
 import UnifiedIngredientSelector from '@/components/stock/UnifiedIngredientSelector';
 import {
     buildNormalizationFormulaText,
@@ -20,6 +20,7 @@ import {
     updateDraftUnit,
     type InboundNormalizationDraft,
 } from '@/utils/stockNormalization';
+import Loading from "@/components/loading/Loading";
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -96,7 +97,7 @@ function formatCurrency(value?: number | null) {
     return `₩${Number(value).toLocaleString()}`;
 }
 
-function StatusBadge({ status }: { status: string | null }) {
+function StatusBadge({status}: { status: string | null }) {
     const map: Record<string, { label: string; cls: string }> = {
         AUTO_SUGGESTED: {
             label: '자동 추천',
@@ -114,13 +115,14 @@ function StatusBadge({ status }: { status: string | null }) {
 
     if (!status) {
         return (
-            <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-500">
+            <span
+                className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-500">
                 미분석
             </span>
         );
     }
 
-    const { label, cls } = map[status] ?? {
+    const {label, cls} = map[status] ?? {
         label: status,
         cls: 'border-gray-200 bg-gray-100 text-gray-500',
     };
@@ -139,7 +141,7 @@ function getItemSuggestions(item: StockInboundItemResponse | null): Candidate[] 
 }
 
 export default function InboundDetailPage() {
-    const { inboundPublicId } = useParams<{ inboundPublicId: string }>();
+    const {inboundPublicId} = useParams<{ inboundPublicId: string }>();
     const storePublicId = requireStorePublicId();
     const navigate = useNavigate();
     const location = useLocation();
@@ -166,9 +168,9 @@ export default function InboundDetailPage() {
     });
 
     const showToast = useCallback((message: string, type: ToastType = 'info') => {
-        setToast({ visible: true, message, type });
+        setToast({visible: true, message, type});
         window.setTimeout(() => {
-            setToast((prev) => ({ ...prev, visible: false }));
+            setToast((prev) => ({...prev, visible: false}));
         }, 3500);
     }, []);
 
@@ -206,7 +208,7 @@ export default function InboundDetailPage() {
     }, [inbound]);
 
     const counts = useMemo(() => {
-        if (!inbound) return { suggested: 0, confirmed: 0, failed: 0 };
+        if (!inbound) return {suggested: 0, confirmed: 0, failed: 0};
 
         return inbound.items.reduce(
             (acc, item) => {
@@ -215,7 +217,7 @@ export default function InboundDetailPage() {
                 else if (item.resolutionStatus === 'FAILED') acc.failed += 1;
                 return acc;
             },
-            { suggested: 0, confirmed: 0, failed: 0 },
+            {suggested: 0, confirmed: 0, failed: 0},
         );
     }, [inbound]);
 
@@ -362,14 +364,7 @@ export default function InboundDetailPage() {
     };
 
     if (loadingDetail) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-100">
-                <div className="space-y-3 text-center">
-                    <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-black" />
-                    <p className="text-sm font-bold text-gray-400">데이터를 불러오는 중...</p>
-                </div>
-            </div>
-        );
+        return <Loading />;
     }
 
     if (!inbound) {
@@ -392,15 +387,18 @@ export default function InboundDetailPage() {
                             onClick={() => navigate('/stock/inbound')}
                             className="flex items-center gap-1 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
-                                <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                 viewBox="0 0 256 256">
+                                <path
+                                    d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"/>
                             </svg>
                             입고 목록
                         </button>
                         <span className="text-gray-300">/</span>
                         <div>
                             <div className="text-sm font-black text-gray-900">입고 상세</div>
-                            <div className="text-xs font-mono text-gray-400">입고번호 {formatInboundNumber(inbound.inboundPublicId)}</div>
+                            <div
+                                className="text-xs font-mono text-gray-400">입고번호 {formatInboundNumber(inbound.inboundPublicId)}</div>
                         </div>
                     </div>
 
@@ -493,142 +491,149 @@ export default function InboundDetailPage() {
 
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[1560px] text-left text-sm">
-                            <thead className="border-b border-gray-200 bg-gray-50 text-xs font-black uppercase tracking-wide text-gray-500">
-                                <tr>
-                                    <th className="w-14 px-5 py-3">#</th>
-                                    <th className="px-4 py-3">품목명</th>
-                                    <th className="px-4 py-3">상품명</th>
-                                    <th className="px-4 py-3">매핑 재료</th>
-                                    <th className="px-4 py-3 text-center">기준 단위</th>
-                                    <th className="px-4 py-3 text-center">입고 수량</th>
-                                    <th className="px-4 py-3 text-center" title="12입, 30구, 1kg 등">1개당 규격</th>
-                                    <th className="px-4 py-3">재고 반영 수량</th>
-                                    <th className="px-4 py-3 text-right">단가</th>
-                                    <th className="px-4 py-3 text-right">금액</th>
-                                    <th className="px-4 py-3 text-center">유통기한</th>
-                                    <th className="px-4 py-3 text-center">상태</th>
-                                    <th className="px-4 py-3 text-center">관리</th>
-                                </tr>
+                            <thead
+                                className="border-b border-gray-200 bg-gray-50 text-xs font-black uppercase tracking-wide text-gray-500">
+                            <tr>
+                                <th className="w-14 px-5 py-3">#</th>
+                                <th className="px-4 py-3">품목명</th>
+                                <th className="px-4 py-3">상품명</th>
+                                <th className="px-4 py-3">매핑 재료</th>
+                                <th className="px-4 py-3 text-center">기준 단위</th>
+                                <th className="px-4 py-3 text-center">입고 수량</th>
+                                <th className="px-4 py-3 text-center" title="12입, 30구, 1kg 등">1개당 규격</th>
+                                <th className="px-4 py-3">재고 반영 수량</th>
+                                <th className="px-4 py-3 text-right">단가</th>
+                                <th className="px-4 py-3 text-right">금액</th>
+                                <th className="px-4 py-3 text-center">유통기한</th>
+                                <th className="px-4 py-3 text-center">상태</th>
+                                <th className="px-4 py-3 text-center">관리</th>
+                            </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {inbound.items.map((item, idx) => {
-                                    const itemId = item.inboundItemPublicId;
-                                    const isLoadingThis = loadingItemId === itemId;
-                                    const resolvedNormalizedRawKey = resolvedNormalizedKeyByItemId[itemId];
-                                    const lineAmount = Number(item.quantity ?? 0) * Number(item.unitCost ?? 0);
-                                    const draft = getDraft(item);
-                                    const normalizedQuantity = calculateNormalizedQuantity(item.quantity, draft, item.normalizedQuantity ?? null);
-                                    const formulaText = buildNormalizationFormulaText(item.quantity, draft, item.normalizedQuantity ?? null);
-                                    const packageSizeText = formatPackageSizeText(draft);
-                                    const hasIncompleteNormalization = draft.unit !== 'EA' && packageSizeText === '-';
+                            {inbound.items.map((item, idx) => {
+                                const itemId = item.inboundItemPublicId;
+                                const isLoadingThis = loadingItemId === itemId;
+                                const resolvedNormalizedRawKey = resolvedNormalizedKeyByItemId[itemId];
+                                const lineAmount = Number(item.quantity ?? 0) * Number(item.unitCost ?? 0);
+                                const draft = getDraft(item);
+                                const normalizedQuantity = calculateNormalizedQuantity(item.quantity, draft, item.normalizedQuantity ?? null);
+                                const formulaText = buildNormalizationFormulaText(item.quantity, draft, item.normalizedQuantity ?? null);
+                                const packageSizeText = formatPackageSizeText(draft);
+                                const hasIncompleteNormalization = draft.unit !== 'EA' && packageSizeText === '-';
 
-                                    let actionLabel = '재료 선택';
-                                    if (item.resolutionStatus === 'FAILED') actionLabel = '매핑';
-                                    else if (item.resolutionStatus === 'AUTO_SUGGESTED') actionLabel = '검토/수정';
-                                    else if (item.resolutionStatus === 'CONFIRMED') actionLabel = '수정';
+                                let actionLabel = '재료 선택';
+                                if (item.resolutionStatus === 'FAILED') actionLabel = '매핑';
+                                else if (item.resolutionStatus === 'AUTO_SUGGESTED') actionLabel = '검토/수정';
+                                else if (item.resolutionStatus === 'CONFIRMED') actionLabel = '수정';
 
-                                    return (
-                                        <tr key={itemId} className="hover:bg-gray-50">
-                                            <td className="px-5 py-4 font-mono text-xs text-gray-400">{idx + 1}</td>
+                                return (
+                                    <tr key={itemId} className="hover:bg-gray-50">
+                                        <td className="px-5 py-4 font-mono text-xs text-gray-400">{idx + 1}</td>
 
-                                            <td className="px-4 py-4">
-                                                <div className="font-bold text-gray-900">{item.rawProductName}</div>
-                                            </td>
+                                        <td className="px-4 py-4">
+                                            <div className="font-bold text-gray-900">{item.rawProductName}</div>
+                                        </td>
 
-                                            <td className="px-4 py-4">
-                                                <div className="text-sm text-gray-700">{item.productDisplayName || item.specText || '-'}</div>
-                                                <div className="mt-1 text-[11px] text-gray-400">
-                                                    인식 규격: <span className="font-semibold text-gray-600">{draft.detectedSpecLabel || '-'}</span>
-                                                </div>
-                                            </td>
+                                        <td className="px-4 py-4">
+                                            <div
+                                                className="text-sm text-gray-700">{item.productDisplayName || item.specText || '-'}</div>
+                                            <div className="mt-1 text-[11px] text-gray-400">
+                                                인식 규격: <span
+                                                className="font-semibold text-gray-600">{draft.detectedSpecLabel || '-'}</span>
+                                            </div>
+                                        </td>
 
-                                            <td className="px-4 py-4">
-                                                {item.ingredientName ? (
-                                                    <span className="font-bold text-gray-900">{item.ingredientName}</span>
-                                                ) : resolvedNormalizedRawKey ? (
-                                                    <span className="font-bold text-gray-900">{resolvedNormalizedRawKey}</span>
-                                                ) : item.normalizedRawKey ? (
-                                                    <span className="font-bold text-gray-900">{item.normalizedRawKey}</span>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">-</span>
-                                                )}
-                                            </td>
+                                        <td className="px-4 py-4">
+                                            {item.ingredientName ? (
+                                                <span className="font-bold text-gray-900">{item.ingredientName}</span>
+                                            ) : resolvedNormalizedRawKey ? (
+                                                <span
+                                                    className="font-bold text-gray-900">{resolvedNormalizedRawKey}</span>
+                                            ) : item.normalizedRawKey ? (
+                                                <span className="font-bold text-gray-900">{item.normalizedRawKey}</span>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">-</span>
+                                            )}
+                                        </td>
 
-                                            <td className="px-4 py-4 text-center">
-                                                <select
-                                                    value={draft.unit}
-                                                    onChange={(e) => handleInlineUnitChange(item, e.target.value as IngredientUnit)}
-                                                    disabled={isConfirmedInbound || isLoadingThis}
-                                                    className={`w-[104px] rounded-md border px-3 py-2 text-xs font-black outline-none ${
-                                                        isConfirmedInbound || isLoadingThis
-                                                            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-                                                            : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500'
-                                                    }`}
-                                                >
-                                                    {unitOptions.map((option) => (
-                                                        <option key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </td>
+                                        <td className="px-4 py-4 text-center">
+                                            <select
+                                                value={draft.unit}
+                                                onChange={(e) => handleInlineUnitChange(item, e.target.value as IngredientUnit)}
+                                                disabled={isConfirmedInbound || isLoadingThis}
+                                                className={`w-[104px] rounded-md border px-3 py-2 text-xs font-black outline-none ${
+                                                    isConfirmedInbound || isLoadingThis
+                                                        ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+                                                        : 'border-gray-200 bg-white text-gray-900 focus:ring-2 focus:ring-indigo-500'
+                                                }`}
+                                            >
+                                                {unitOptions.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </td>
 
-                                            <td className="px-4 py-4 text-center font-bold text-gray-900">{item.quantity}</td>
+                                        <td className="px-4 py-4 text-center font-bold text-gray-900">{item.quantity}</td>
 
-                                            <td className="px-4 py-4 text-center text-gray-700">
-                                                <div className={`font-bold ${hasIncompleteNormalization ? 'text-rose-600' : 'text-gray-900'}`}>
-                                                    {packageSizeText}
-                                                </div>
-                                            </td>
+                                        <td className="px-4 py-4 text-center text-gray-700">
+                                            <div
+                                                className={`font-bold ${hasIncompleteNormalization ? 'text-rose-600' : 'text-gray-900'}`}>
+                                                {packageSizeText}
+                                            </div>
+                                        </td>
 
-                                            <td className="px-4 py-4">
-                                                <div className={`font-black ${hasIncompleteNormalization ? 'text-rose-600' : 'text-gray-900'}`}>
-                                                    {formatNormalizedQuantityText(normalizedQuantity, draft.unit)}
-                                                </div>
-                                                <div className="mt-1 text-[11px] text-gray-400">{formulaText}</div>
-                                            </td>
+                                        <td className="px-4 py-4">
+                                            <div
+                                                className={`font-black ${hasIncompleteNormalization ? 'text-rose-600' : 'text-gray-900'}`}>
+                                                {formatNormalizedQuantityText(normalizedQuantity, draft.unit)}
+                                            </div>
+                                            <div className="mt-1 text-[11px] text-gray-400">{formulaText}</div>
+                                        </td>
 
-                                            <td className="px-4 py-4 text-right text-gray-700">{formatCurrency(item.unitCost)}</td>
+                                        <td className="px-4 py-4 text-right text-gray-700">{formatCurrency(item.unitCost)}</td>
 
-                                            <td className="px-4 py-4 text-right font-bold text-gray-900">{formatCurrency(lineAmount)}</td>
+                                        <td className="px-4 py-4 text-right font-bold text-gray-900">{formatCurrency(lineAmount)}</td>
 
-                                            <td className="px-4 py-4 text-center text-gray-700">{formatDate(item.expirationDate)}</td>
+                                        <td className="px-4 py-4 text-center text-gray-700">{formatDate(item.expirationDate)}</td>
 
-                                            <td className="px-4 py-4 text-center">
-                                                <StatusBadge status={item.resolutionStatus} />
-                                            </td>
+                                        <td className="px-4 py-4 text-center">
+                                            <StatusBadge status={item.resolutionStatus}/>
+                                        </td>
 
-                                            <td className="px-4 py-4 text-center">
-                                                {isConfirmedInbound ? (
-                                                    <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-500">
+                                        <td className="px-4 py-4 text-center">
+                                            {isConfirmedInbound ? (
+                                                <span
+                                                    className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[11px] font-bold text-gray-500">
                                                         완료
                                                     </span>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleOpenSelector(item)}
-                                                        disabled={isLoadingThis}
-                                                        className={`rounded-md px-3 py-2 text-[11px] font-black transition-colors ${
-                                                            isLoadingThis
-                                                                ? 'cursor-not-allowed bg-gray-300 text-gray-600'
-                                                                : 'bg-gray-900 text-white hover:bg-black'
-                                                        }`}
-                                                    >
-                                                        {isLoadingThis ? '처리 중...' : actionLabel}
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleOpenSelector(item)}
+                                                    disabled={isLoadingThis}
+                                                    className={`rounded-md px-3 py-2 text-[11px] font-black transition-colors ${
+                                                        isLoadingThis
+                                                            ? 'cursor-not-allowed bg-gray-300 text-gray-600'
+                                                            : 'bg-gray-900 text-white hover:bg-black'
+                                                    }`}
+                                                >
+                                                    {isLoadingThis ? '처리 중...' : actionLabel}
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             </tbody>
                             <tfoot className="border-t border-gray-200 bg-gray-50">
-                                <tr>
-                                    <td colSpan={9} className="px-4 py-4 text-right text-sm font-black text-gray-700">
-                                        총 비용
-                                    </td>
-                                    <td className="px-4 py-4 text-right text-lg font-black text-gray-900">{formatCurrency(totalCost)}</td>
-                                    <td colSpan={3} />
-                                </tr>
+                            <tr>
+                                <td colSpan={9} className="px-4 py-4 text-right text-sm font-black text-gray-700">
+                                    총 비용
+                                </td>
+                                <td className="px-4 py-4 text-right text-lg font-black text-gray-900">{formatCurrency(totalCost)}</td>
+                                <td colSpan={3}/>
+                            </tr>
                             </tfoot>
                         </table>
                     </div>

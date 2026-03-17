@@ -25,6 +25,7 @@ import {
     Package,
     HelpCircle
 } from 'lucide-react';
+import Loading from '@/components/loading/Loading';
 
 type ViewStockTakeItem = {
     ingredientPublicId: string;
@@ -302,6 +303,10 @@ const StockTakePage: React.FC = () => {
         return 'text-slate-400';
     };
 
+    if (isLoading) {
+        return <Loading />;
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 pt-10">
 
@@ -372,229 +377,222 @@ const StockTakePage: React.FC = () => {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 py-6">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-32 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4" />
-                        <p className="text-slate-500 font-medium">실사 정보를 불러오는 중입니다...</p>
-                    </div>
-                ) : (
-                    <>
-                        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                                    입력 현황
+                <>
+                    <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                입력 현황
+                            </p>
+
+                            <div className="flex items-end justify-between">
+                                <h2 className="text-2xl font-black text-slate-800">
+                                    {summary.entered}{' '}
+                                    <span className="text-sm text-slate-400 font-medium">
+                                        / {summary.total}
+                                    </span>
+                                </h2>
+                                <div className="text-green-500 font-bold text-sm">
+                                    {Math.round(summary.progress)}%
+                                </div>
+                            </div>
+
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
+                                <div
+                                    className="h-full bg-green-500 transition-all duration-500"
+                                    style={{ width: `${summary.progress}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 bg-slate-900 rounded-2xl p-5 shadow-xl flex items-center justify-between text-white">
+                            <div>
+                                <h3 className="font-bold flex items-center gap-2">
+                                    <HelpCircle size={16} className="text-emerald-500" />
+                                    실사 가이드
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                    1. 각 품목의 실제 수량을 입력하세요. 단위가 다른 품목은 개별 차이
+                                    수량을 확인 바랍니다.
+                                    <br />
+                                    2. 저장 후 실사 시트에 장부 재고 기준값이 반영되며, 이후 차이 수량이
+                                    계산됩니다.
+                                    <br />
+                                    3. 최종확정 시 현재 화면에 입력된 값이 그대로 반영되며, 확정 후에는 수정할
+                                    수 없습니다.
                                 </p>
-
-                                <div className="flex items-end justify-between">
-                                    <h2 className="text-2xl font-black text-slate-800">
-                                        {summary.entered}{' '}
-                                        <span className="text-sm text-slate-400 font-medium">
-                                            / {summary.total}
-                                        </span>
-                                    </h2>
-                                    <div className="text-green-500 font-bold text-sm">
-                                        {Math.round(summary.progress)}%
-                                    </div>
-                                </div>
-
-                                <div className="w-full h-1.5 bg-slate-100 rounded-full mt-3 overflow-hidden">
-                                    <div
-                                        className="h-full bg-green-500 transition-all duration-500"
-                                        style={{ width: `${summary.progress}%` }}
-                                    />
-                                </div>
                             </div>
 
-                            <div className="md:col-span-2 bg-slate-900 rounded-2xl p-5 shadow-xl flex items-center justify-between text-white">
-                                <div>
-                                    <h3 className="font-bold flex items-center gap-2">
-                                        <HelpCircle size={16} className="text-emerald-500" />
-                                        실사 가이드
-                                    </h3>
-                                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                        1. 각 품목의 실제 수량을 입력하세요. 단위가 다른 품목은 개별 차이
-                                        수량을 확인 바랍니다.
-                                        <br />
-                                        2. 저장 후 실사 시트에 장부 재고 기준값이 반영되며, 이후 차이 수량이
-                                        계산됩니다.
-                                        <br />
-                                        3. 최종확정 시 현재 화면에 입력된 값이 그대로 반영되며, 확정 후에는 수정할
-                                        수 없습니다.
-                                    </p>
-                                </div>
-
-                                <div className="hidden lg:block opacity-20">
-                                </div>
+                            <div className="hidden lg:block opacity-20">
                             </div>
-                        </section>
+                        </div>
+                    </section>
 
-                        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between gap-4">
-                                <div className="relative flex-1 max-w-md group">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={16} />
-                                    <input
-                                        type="text"
-                                        placeholder="품목명 또는 코드 검색..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-slate-200 transition outline-none"
-                                    />
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        className="px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl transition flex items-center gap-1.5"
-                                        type="button"
-                                    >
-                                        <Download size={14} />
-                                        다운로드
-                                    </button>
-                                    <button
-                                        className="px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl transition flex items-center gap-1.5"
-                                        type="button"
-                                    >
-                                        <Printer size={14} />
-                                        인쇄
-                                    </button>
-                                </div>
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between gap-4">
+                            <div className="relative flex-1 max-w-md group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={16} />
+                                <input
+                                    type="text"
+                                    placeholder="품목명 또는 코드 검색..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-slate-200 transition outline-none"
+                                />
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-slate-50/50 text-[11px] font-black text-slate-400 uppercase tracking-tighter">
-                                            <th className="px-6 py-4">품목 정보</th>
-                                            <th className="px-6 py-4 text-right">장부 재고 (A)</th>
-                                            <th className="px-6 py-4 text-center w-40">실사 수량 (B)</th>
-                                            <th className="px-6 py-4 text-right">차이 (B-A)</th>
-                                            <th className="px-6 py-4 text-center">단위</th>
-                                        </tr>
-                                    </thead>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    className="px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl transition flex items-center gap-1.5"
+                                    type="button"
+                                >
+                                    <Download size={14} />
+                                    다운로드
+                                </button>
+                                <button
+                                    className="px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl transition flex items-center gap-1.5"
+                                    type="button"
+                                >
+                                    <Printer size={14} />
+                                    인쇄
+                                </button>
+                            </div>
+                        </div>
 
-                                    <tbody className="divide-y divide-slate-100">
-                                        {filteredItems.length > 0 ? (
-                                            filteredItems.map((item) => {
-                                                const stockTakeQty = item.stockTakeQty ?? 0;
-                                                const isDirtyRow = stockTakeQty > 0;
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50/50 text-[11px] font-black text-slate-400 uppercase tracking-tighter">
+                                        <th className="px-6 py-4">품목 정보</th>
+                                        <th className="px-6 py-4 text-right">장부 재고 (A)</th>
+                                        <th className="px-6 py-4 text-center w-40">실사 수량 (B)</th>
+                                        <th className="px-6 py-4 text-right">차이 (B-A)</th>
+                                        <th className="px-6 py-4 text-center">단위</th>
+                                    </tr>
+                                </thead>
 
-                                                return (
-                                                    <tr
-                                                        key={item.ingredientPublicId}
-                                                        className={`group hover:bg-slate-50/80 transition-colors ${status === 'CONFIRMED' ? 'opacity-60' : ''
-                                                            }`}
-                                                    >
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center gap-2">
-                                                                <Package size={16} className="text-slate-200" />
-                                                                <div>
-                                                                    <div className="font-bold text-slate-800 group-hover:text-blue-600 transition">
-                                                                        {item.name}
-                                                                    </div>
-                                                                    <div className="text-[10px] text-slate-400 font-medium">
-                                                                        CODE: {item.ingredientPublicId}
-                                                                    </div>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredItems.length > 0 ? (
+                                        filteredItems.map((item) => {
+                                            const stockTakeQty = item.stockTakeQty ?? 0;
+                                            const isDirtyRow = stockTakeQty > 0;
+
+                                            return (
+                                                <tr
+                                                    key={item.ingredientPublicId}
+                                                    className={`group hover:bg-slate-50/80 transition-colors ${status === 'CONFIRMED' ? 'opacity-60' : ''
+                                                        }`}
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Package size={16} className="text-slate-200" />
+                                                            <div>
+                                                                <div className="font-bold text-slate-800 group-hover:text-blue-600 transition">
+                                                                    {item.name}
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-400 font-medium">
+                                                                    CODE: {item.ingredientPublicId}
                                                                 </div>
                                                             </div>
-                                                        </td>
+                                                        </div>
+                                                    </td>
 
-                                                        <td className="px-6 py-4 text-right font-mono text-sm text-slate-500">
-                                                            {renderTheoreticalQty(item)}
-                                                        </td>
+                                                    <td className="px-6 py-4 text-right font-mono text-sm text-slate-500">
+                                                        {renderTheoreticalQty(item)}
+                                                    </td>
 
-                                                        <td className="px-6 py-4">
-                                                            <input
-                                                                type="number"
-                                                                step="1"
-                                                                value={stockTakeQty === 0 ? '' : stockTakeQty}
-                                                                disabled={status === 'CONFIRMED'}
-                                                                onChange={(e) =>
-                                                                    handleQtyChange(
-                                                                        item.ingredientPublicId,
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                className={`w-full py-2 px-3 text-center font-black text-lg rounded-xl border-2 transition-all outline-none ${isDirtyRow
-                                                                    ? 'border-blue-100 bg-blue-50 text-blue-700 focus:border-blue-400'
-                                                                    : 'border-slate-100 bg-white focus:border-slate-300'
-                                                                    } disabled:bg-slate-50 disabled:border-transparent`}
-                                                                placeholder="0"
-                                                            />
-                                                        </td>
+                                                    <td className="px-6 py-4">
+                                                        <input
+                                                            type="number"
+                                                            step="1"
+                                                            value={stockTakeQty === 0 ? '' : stockTakeQty}
+                                                            disabled={status === 'CONFIRMED'}
+                                                            onChange={(e) =>
+                                                                handleQtyChange(
+                                                                    item.ingredientPublicId,
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            className={`w-full py-2 px-3 text-center font-black text-lg rounded-xl border-2 transition-all outline-none ${isDirtyRow
+                                                                ? 'border-blue-100 bg-blue-50 text-blue-700 focus:border-blue-400'
+                                                                : 'border-slate-100 bg-white focus:border-slate-300'
+                                                                } disabled:bg-slate-50 disabled:border-transparent`}
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
 
-                                                        <td
-                                                            className={`px-6 py-4 text-right font-mono font-bold text-sm ${getVarianceTextColor(
-                                                                item
-                                                            )}`}
-                                                        >
-                                                            {renderVariance(item)}
-                                                        </td>
+                                                    <td
+                                                        className={`px-6 py-4 text-right font-mono font-bold text-sm ${getVarianceTextColor(
+                                                            item
+                                                        )}`}
+                                                    >
+                                                        {renderVariance(item)}
+                                                    </td>
 
-                                                        <td className="px-6 py-4 text-center">
-                                                            <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
-                                                                {item.unit || '-'}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        ) : (
-                                            <tr>
-                                                <td
-                                                    colSpan={5}
-                                                    className="px-6 py-20 text-center text-slate-400 italic font-medium"
-                                                >
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <AlertCircle size={32} className="opacity-20" />
-                                                        일치하는 품목이 없습니다.
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
+                                                            {item.unit || '-'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td
+                                                colSpan={5}
+                                                className="px-6 py-20 text-center text-slate-400 italic font-medium"
+                                            >
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <AlertCircle size={32} className="opacity-20" />
+                                                    일치하는 품목이 없습니다.
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-white rounded-2xl border border-slate-200">
+                        <div className="flex items-center gap-6">
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
+                                    총 입력 품목
+                                </p>
+                                <p className="font-bold">
+                                    {summary.entered} / {summary.total}
+                                </p>
+                            </div>
+
+                            <div className="h-8 w-px bg-slate-100" />
+
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
+                                    총 재고 차이
+                                </p>
+                                <p
+                                    className={`font-bold ${summary.comparableCount === 0
+                                        ? 'text-slate-400'
+                                        : summary.variance >= 0
+                                            ? 'text-blue-500'
+                                            : 'text-rose-500'
+                                        }`}
+                                >
+                                    {summary.comparableCount === 0
+                                        ? '생성 후 계산'
+                                        : summary.variance > 0
+                                            ? `+${summary.variance.toFixed(2)}`
+                                            : summary.variance.toFixed(2)}
+                                </p>
                             </div>
                         </div>
 
-                        <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-white rounded-2xl border border-slate-200">
-                            <div className="flex items-center gap-6">
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
-                                        총 입력 품목
-                                    </p>
-                                    <p className="font-bold">
-                                        {summary.entered} / {summary.total}
-                                    </p>
-                                </div>
-
-                                <div className="h-8 w-px bg-slate-100" />
-
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
-                                        총 재고 차이
-                                    </p>
-                                    <p
-                                        className={`font-bold ${summary.comparableCount === 0
-                                            ? 'text-slate-400'
-                                            : summary.variance >= 0
-                                                ? 'text-blue-500'
-                                                : 'text-rose-500'
-                                            }`}
-                                    >
-                                        {summary.comparableCount === 0
-                                            ? '생성 후 계산'
-                                            : summary.variance > 0
-                                                ? `+${summary.variance.toFixed(2)}`
-                                                : summary.variance.toFixed(2)}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
-                                최종 확정 시 현재 입력된 값이 그대로 반영되며, 이후 장부 재고가 업데이트됩니다.
-                            </div>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                            최종 확정 시 현재 입력된 값이 그대로 반영되며, 이후 장부 재고가 업데이트됩니다.
                         </div>
-                    </>
-                )}
+                    </div>
+                </>
             </main>
         </div>
     );

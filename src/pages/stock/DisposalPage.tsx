@@ -165,16 +165,20 @@ export default function DisposalPage() {
         }
     };
 
+    if (isMainLoading) {
+        return <Loading />;
+    }
+
     return (
         <div className="min-h-screen bg-[#F8F9FB]">
             <div className="mx-auto w-full max-w-7xl px-6 py-10">
                 <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm">
-                            <Package className="h-4 w-4"/>
-                            <span>Stock Management</span>
+
                         </div>
-                        <h1 className="text-4xl font-black tracking-tight text-gray-900">폐기 관리</h1>
+                        <h1 className="text-4xl font-black tracking-tight text-gray-900"><Package
+                            className="h-10 w-10"/>폐기 관리</h1>
                     </div>
                     <button
                         onClick={() => setIsMainModalOpen(true)}
@@ -209,11 +213,7 @@ export default function DisposalPage() {
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                            {isMainLoading ? (
-                                <tr>
-                                    <td colSpan={5} className="py-32 text-center"><Loading/></td>
-                                </tr>
-                            ) : mainData?.content.length === 0 ? (
+                            {mainData?.content.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="py-24 text-center">
                                         <div className="flex flex-col items-center gap-3 text-gray-300">
@@ -385,55 +385,91 @@ export default function DisposalPage() {
                                 </div>
                             )}
                         </div>
+
                         <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-[#F8F9FB]/50">
                             {!selectedIngredient ? (
-                                summaryItems.map((item, idx) => (
-                                    <div key={item.ingredientId}
-                                         ref={summaryItems.length === idx + 1 ? lastItemRef : null}
-                                         onClick={() => fetchBatches(item)}
-                                         className="p-5 bg-white border border-gray-100 rounded-[20px] hover:border-black cursor-pointer flex justify-between items-center group transition-all shadow-sm">
-                                        <div className="flex items-center gap-4">
-                                            <div
-                                                className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                                                <Package className="h-5 w-5"/></div>
-                                            <div>
-                                                <div className="font-black text-gray-900">{item.ingredientName}</div>
-                                                <div
-                                                    className="text-[10px] text-gray-400 mt-0.5 font-bold uppercase tracking-tight">총
-                                                    재고 {item.totalRemainingQuantity}{item.unit} · {item.batchCount}개의 배치
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <ChevronRight className="h-5 w-5 text-gray-200 group-hover:text-black"/>
-                                    </div>
-                                ))
-                            ) : (
-                                batchItems.map((batch) => (
-                                    <div key={batch.stockBatchId}
-                                         onClick={() => handleSelectBatch(batch, selectedIngredient.ingredientName)}
-                                         className="p-5 bg-white border border-gray-100 rounded-[20px] hover:border-black cursor-pointer transition-all shadow-sm group">
-                                        <div className="flex justify-between items-center">
+                                <>
+                                    {summaryItems.map((item, idx) => (
+                                        <div key={item.ingredientId}
+                                             ref={summaryItems.length === idx + 1 ? lastItemRef : null}
+                                             onClick={() => fetchBatches(item)}
+                                             className="p-5 bg-white border border-gray-100 rounded-[20px] hover:border-black cursor-pointer flex justify-between items-center group transition-all shadow-sm">
                                             <div className="flex items-center gap-4">
                                                 <div
-                                                    className="h-10 w-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
-                                                    <Calendar className="h-5 w-5"/></div>
+                                                    className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                                                    <Package className="h-5 w-5"/>
+                                                </div>
                                                 <div>
                                                     <div
-                                                        className="text-[10px] font-black text-red-500 uppercase tracking-widest">유통기한: {batch.expirationDate}</div>
+                                                        className="font-black text-gray-900">{item.ingredientName}</div>
                                                     <div
-                                                        className="text-sm font-black text-gray-900 mt-1">{batch.rawProductName}</div>
+                                                        className="text-[10px] text-gray-400 mt-0.5 font-bold uppercase tracking-tight">
+                                                        총
+                                                        재고 {item.totalRemainingQuantity}{item.unit} · {item.batchCount}개의
+                                                        배치
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <div
-                                                    className="text-lg font-black text-indigo-600">{batch.remainingQuantity} {selectedIngredient?.unit}</div>
+                                            <ChevronRight className="h-5 w-5 text-gray-200 group-hover:text-black"/>
+                                        </div>
+                                    ))}
+
+                                    {/* 데이터가 없고 로딩 중이 아닐 때 */}
+                                    {!isSummaryLoading && summaryItems.length === 0 && (
+                                        <div
+                                            className="py-20 text-center flex flex-col items-center gap-3 text-gray-300">
+                                            <AlertCircle className="h-10 w-10 opacity-20"/>
+                                            <p className="font-bold">검색 결과가 없습니다.</p>
+                                        </div>
+                                    )}
+
+                                    {/* 무한 스크롤 로딩바: 추가 데이터가 있을 때만 표시 */}
+                                    {isSummaryLoading && hasMoreSummary && (
+                                        <div className="py-6 flex justify-center items-center gap-2">
+                                            <div
+                                                className="w-5 h-5 border-2 border-gray-200 border-t-black rounded-full animate-spin"></div>
+                                            <span className="text-xs font-bold text-gray-400">목록을 불러오는 중...</span>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    {batchItems.map((batch) => (
+                                        <div key={batch.stockBatchId}
+                                             onClick={() => handleSelectBatch(batch, selectedIngredient.ingredientName)}
+                                             className="p-5 bg-white border border-gray-100 rounded-[20px] hover:border-black cursor-pointer transition-all shadow-sm group">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-4">
+                                                    <div
+                                                        className="h-10 w-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+                                                        <Calendar className="h-5 w-5"/>
+                                                    </div>
+                                                    <div>
+                                                        <div
+                                                            className="text-[10px] font-black text-red-500 uppercase tracking-widest">
+                                                            유통기한: {batch.expirationDate}
+                                                        </div>
+                                                        <div
+                                                            className="text-sm font-black text-gray-900 mt-1">{batch.rawProductName}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-lg font-black text-indigo-600">
+                                                        {batch.remainingQuantity} {selectedIngredient?.unit}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))
-                            )}
-                            {(isSummaryLoading || isBatchLoading) && (
-                                <div className="py-20 flex justify-center"><Loading/></div>
+                                    ))}
+
+                                    {/* 배치 로딩 (배치는 보통 한 번에 가져오므로 단순 로더 적용) */}
+                                    {isBatchLoading && (
+                                        <div className="py-20 flex justify-center">
+                                            <div
+                                                className="w-8 h-8 border-3 border-gray-100 border-t-black rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

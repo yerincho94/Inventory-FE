@@ -27,6 +27,7 @@ import type {
     TableQrResponse
 } from '@/types';
 import { requireStorePublicId } from '@/utils/store';
+import Loading from '@/components/loading/Loading';
 
 interface TableWithQr extends DiningTableResponse {
     qrInfo?: TableQrResponse;
@@ -205,11 +206,7 @@ const DiningTablePage = () => {
     };
 
     if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <p className="font-bold text-gray-500">데이터를 불러오는 중입니다...</p>
-            </div>
-        );
+        return <Loading />;
     }
 
     return (

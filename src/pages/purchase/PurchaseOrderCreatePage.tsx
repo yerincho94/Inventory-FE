@@ -6,6 +6,7 @@ import { requireStorePublicId } from '@/utils/store';
 import type { PurchaseOrderItemRequest } from '@/types/purchase/purchase.ts';
 import type { VendorResponse } from '@/types/reference/vendor.ts';
 import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import Loading from '@/components/loading/Loading';
 
 export default function PurchaseOrderCreatePage() {
     const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function PurchaseOrderCreatePage() {
         { itemName: '', quantity: 1, unit: 'EA', unitPrice: 0 }
     ]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchVendors = async () => {
@@ -25,6 +27,8 @@ export default function PurchaseOrderCreatePage() {
             } catch (error) {
                 console.error('거래처 목록 조회 실패:', error);
                 alert('거래처 목록을 불러오는데 실패했습니다.');
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -107,6 +111,10 @@ export default function PurchaseOrderCreatePage() {
             navigate('/purchase-orders');
         }
     };
+
+    if (isLoading || isSubmitting) {
+        return <Loading />;
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-6">

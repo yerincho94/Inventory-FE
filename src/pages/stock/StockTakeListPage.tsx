@@ -4,7 +4,6 @@ import {
     Plus,
     Calendar,
     ChevronRight,
-    Loader2,
     ClipboardList,
     CheckCircle2,
     Clock,
@@ -16,6 +15,7 @@ import { requireStorePublicId } from '@/utils/store.ts';
 import { getStockTakeSheets } from '@/api/stock/stockTake';
 import type { PageResponse } from '@/types/common/common';
 import type { StockTakeSheetResponse } from '@/types/stock/stockTake';
+import Loading from '@/components/loading/Loading';
 
 /**
  * 실사 재고 관리 시스템 리스트 컴포넌트
@@ -129,6 +129,10 @@ const StockTakeListPage = () => {
                 );
         }
     };
+
+    if (isLoading) {
+        return <Loading />;
+    }
 
     return (
         <div className="bg-slate-50 min-h-screen pt-10">
@@ -263,21 +267,7 @@ const StockTakeListPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-32 text-center">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <Loader2 className="animate-spin text-slate-200" size={40} />
-                                                <div className="flex flex-col gap-1">
-                                                    <p className="font-black text-slate-800 uppercase tracking-tighter text-lg">데이터 분석 중</p>
-                                                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-                                                        목록을 성공적으로 불러오고 있습니다.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : sheets.length > 0 ? (
+                                {sheets.length > 0 ? (
                                     sheets.map((sheet) => (
                                         <tr key={sheet.sheetPublicId} className="hover:bg-slate-50 transition-colors group">
                                             <td className="px-10 py-8">

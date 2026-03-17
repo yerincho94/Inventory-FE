@@ -2,6 +2,7 @@ import {useState, useEffect} from "react";
 import {getDocuments} from "@/api/ocr/document.ts";
 import type {DocumentResponse} from "@/types";
 import {requireStorePublicId} from "@/utils/store.ts";
+import Loading from "@/components/loading/Loading";
 
 function formatDateTime(dateStr?: string | null) {
     if (!dateStr) return "-";
@@ -37,6 +38,10 @@ export default function StockDocumentsPage() {
         fetchDocs();
     }, [storePublicId]);
 
+    if (loading) {
+        return <Loading />;
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <div className="mx-auto w-full max-w-6xl px-6 py-8 flex flex-col flex-1">
@@ -65,13 +70,7 @@ export default function StockDocumentsPage() {
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={4} className="py-20 text-center text-gray-400 font-bold animate-pulse">
-                                        저장소 동기화 중...
-                                    </td>
-                                </tr>
-                            ) : documents.length === 0 ? (
+                            {documents.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className="py-20 text-center text-gray-400 font-bold">
                                         저장된 증빙 서류가 없습니다.
