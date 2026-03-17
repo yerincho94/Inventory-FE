@@ -345,7 +345,7 @@ export default function Navbar() {
             {
                 title: "리포트",
                 items: [
-                    { label: "운영 리포트", path: "/reports" },
+                    { label: "월간 운영 리포트", path: "/reports" },
                     { label: "리포트 발행", path: "/reports/generate" },
                 ],
             },
