@@ -304,9 +304,18 @@ export default function InboundDetailPage() {
                 setModalItem(null);
                 showToast('재료가 확정되었습니다.', 'success');
                 await loadDetail();
-            } catch (error) {
+            } catch (error: unknown) {
                 console.error(error);
-                showToast('재료 확정에 실패했습니다.', 'error');
+                let errorMessage = '재료 확정에 실패했습니다.';
+
+                if (error && typeof error === 'object' && 'response' in error) {
+                    const response = (error as { response?: { data?: { message?: string } } }).response;
+                    if (response?.data?.message) {
+                        errorMessage = response.data.message;
+                    }
+                }
+
+                showToast(errorMessage, 'error');
                 throw error;
             } finally {
                 setLoadingItemId(null);

@@ -176,9 +176,18 @@ export default function UnifiedIngredientSelector({
                 specText: localSpecText.trim() || undefined,
             });
             onClose();
-        } catch (error) {
+        } catch (error: unknown) {
             console.error(error);
-            alert('재료 확정에 실패했습니다.');
+            let errorMessage = '재료 확정에 실패했습니다.';
+
+            if (error && typeof error === 'object' && 'response' in error) {
+                const response = (error as { response?: { data?: { message?: string } } }).response;
+                if (response?.data?.message) {
+                    errorMessage = response.data.message;
+                }
+            }
+
+            alert(errorMessage);
         } finally {
             setSubmitting(false);
         }
@@ -197,9 +206,18 @@ export default function UnifiedIngredientSelector({
                 specText: localSpecText.trim() || undefined,
             });
             onClose();
-        } catch (error) {
+        } catch (error: unknown) {
             console.error(error);
-            alert('새 재료 생성 및 확정에 실패했습니다.');
+            let errorMessage = '새 재료 생성 및 확정에 실패했습니다.';
+
+            if (error && typeof error === 'object' && 'response' in error) {
+                const response = (error as { response?: { data?: { message?: string } } }).response;
+                if (response?.data?.message) {
+                    errorMessage = response.data.message;
+                }
+            }
+
+            alert(errorMessage);
         } finally {
             setSubmitting(false);
         }
@@ -212,9 +230,18 @@ export default function UnifiedIngredientSelector({
             setSubmitting(true);
             await onSaveNormalization(item.inboundItemPublicId, localDraft, localSpecText);
             onClose();
-        } catch (error) {
+        } catch (error: unknown) {
             console.error(error);
-            alert('정규화 저장에 실패했습니다.');
+            let errorMessage = '정규화 저장에 실패했습니다.';
+
+            if (error && typeof error === 'object' && 'response' in error) {
+                const response = (error as { response?: { data?: { message?: string } } }).response;
+                if (response?.data?.message) {
+                    errorMessage = response.data.message;
+                }
+            }
+
+            alert(errorMessage);
         } finally {
             setSubmitting(false);
         }
