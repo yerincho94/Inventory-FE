@@ -166,7 +166,7 @@ export default function DisposalPage() {
     };
 
     if (isMainLoading) {
-        return <Loading />;
+        return <Loading/>;
     }
 
     return (
@@ -227,7 +227,7 @@ export default function DisposalPage() {
                                     <tr key={item.wastePublicId} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-8 py-6 text-gray-400 font-bold">{new Date(item.wasteAt).toLocaleDateString()}</td>
                                         <td className="px-8 py-6 font-black text-gray-900">{item.ingredientName}</td>
-                                        <td className="px-8 py-6 text-right font-black text-gray-600">{item.quantity} EA</td>
+                                        <td className="px-8 py-6 text-right font-black text-gray-600">{item.quantity}</td>
                                         <td className="px-8 py-6 text-right font-black text-red-500">-
                                             ₩{item.amount.toLocaleString()}</td>
                                         <td className="px-8 py-6 text-center">
