@@ -82,7 +82,7 @@ const StockLogPage: React.FC = () => {
     }, [fetchLogs]);
 
     if (loading && currentPage === 0) {
-        return <Loading />;
+        return <Loading/>;
     }
 
     return (
@@ -198,10 +198,10 @@ const StockLogPage: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className={`px-6 py-4 text-right font-black text-sm ${display.color}`}>
-                                                {display.text}
+                                                {display.text} {log.unit}
                                             </td>
                                             <td className="px-6 py-4 text-right font-black text-gray-900">
-                                                {log.balanceAfter?.toLocaleString() ?? 0}
+                                                {log.balanceAfter?.toLocaleString() ?? 0} {log.unit}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">

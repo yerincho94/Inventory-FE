@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 
 import {
     getMenus,
@@ -16,12 +16,11 @@ import {
     Edit3,
     ChevronLeft,
     Save,
-    DollarSign,
     Package
 } from 'lucide-react';
 
-import { getAllIngredients, type IngredientResponse } from '@/api';
-import { requireStorePublicId } from '@/utils/store.ts';
+import {getAllIngredients, type IngredientResponse} from '@/api';
+import {requireStorePublicId} from '@/utils/store.ts';
 import Loading from '@/components/loading/Loading';
 
 /**
@@ -127,7 +126,7 @@ const MenuPage: React.FC = () => {
                 name: '',
                 basePrice: '',
                 status: 'ACTIVE',
-                ingredients: [{ ingredientPublicId: '', name: '', qty: '', unit: 'EA' }],
+                ingredients: [{ingredientPublicId: '', name: '', qty: '', unit: 'EA'}],
             });
             setViewMode('CREATE');
         }
@@ -139,7 +138,7 @@ const MenuPage: React.FC = () => {
             ...prev,
             ingredients: [
                 ...prev.ingredients,
-                { ingredientPublicId: '', name: '', qty: '', unit: 'EA' },
+                {ingredientPublicId: '', name: '', qty: '', unit: 'EA'},
             ],
         }));
     };
@@ -177,7 +176,7 @@ const MenuPage: React.FC = () => {
         setFormData((prev) => ({
             ...prev,
             ingredients: prev.ingredients.map((row, i) =>
-                i === index ? { ...row, qty: value } : row
+                i === index ? {...row, qty: value} : row
             ),
         }));
     };
@@ -239,7 +238,7 @@ const MenuPage: React.FC = () => {
     };
 
     // 상태 배지
-    const StatusBadge = ({ status }: { status: MenuStatus }) => {
+    const StatusBadge = ({status}: { status: MenuStatus }) => {
         const styles: Record<MenuStatus, string> = {
             ACTIVE: 'bg-green-100 text-green-700 border-green-200',
             INACTIVE: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -255,7 +254,7 @@ const MenuPage: React.FC = () => {
     };
 
     if (isLoading) {
-        return <Loading />;
+        return <Loading/>;
     }
 
     return (
@@ -273,7 +272,9 @@ const MenuPage: React.FC = () => {
                             </div>
                             <div className="flex gap-3">
                                 <div className="relative group">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors" size={18} />
+                                    <Search
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-black transition-colors"
+                                        size={18}/>
                                     <input
                                         type="text"
                                         placeholder="메뉴명 검색..."
@@ -286,7 +287,7 @@ const MenuPage: React.FC = () => {
                                     onClick={() => openForm()}
                                     className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-gray-800 transition-all shadow-xl shadow-slate-200"
                                 >
-                                    <Plus size={20} />
+                                    <Plus size={20}/>
                                     신규 메뉴 추가
                                 </button>
                             </div>
@@ -305,24 +306,26 @@ const MenuPage: React.FC = () => {
                                                 className="text-slate-300 hover:text-red-500 transition-colors"
                                                 title="삭제"
                                             >
-                                                <Trash2 size={18} />
+                                                <Trash2 size={18}/>
                                             </button>
                                         </div>
 
                                         <div className="flex flex-col h-full">
                                             <div className="mb-4">
-                                                <StatusBadge status={menu.status} />
+                                                <StatusBadge status={menu.status}/>
                                                 <h3 className="text-xl font-black text-slate-800 mt-2 tracking-tight group-hover:text-black transition-colors">
                                                     {menu.name}
                                                 </h3>
                                                 <p className="text-black font-black text-lg mt-1 flex items-center gap-1">
-                                                    <DollarSign size={16} className="text-slate-300" />
+                                                    <span
+                                                        className="text-[14px] font-black text-slate-400 mr-1">₩</span>
                                                     {menu.basePrice?.toLocaleString()}
                                                 </p>
                                             </div>
 
                                             <div className="flex-1 bg-slate-50 rounded-2xl p-4 mb-6">
-                                                <div className="flex items-center gap-2 mb-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                                                <div
+                                                    className="flex items-center gap-2 mb-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
                                                     구성 식재료 ({(menu.ingredientsJson as any[])?.length || 0})
                                                 </div>
                                                 <div className="flex flex-wrap gap-1.5">
@@ -332,7 +335,8 @@ const MenuPage: React.FC = () => {
                                                             className="bg-white px-2 py-1 rounded-lg text-[11px] font-bold text-slate-500 border border-slate-100 flex items-center gap-1"
                                                         >
                                                             {ing.name ?? '재료'}{' '}
-                                                            <span className="text-[9px] text-slate-300">{ing.unit ?? ''}</span>
+                                                            <span
+                                                                className="text-[9px] text-slate-300">{ing.unit ?? ''}</span>
                                                         </span>
                                                     ))}
                                                     {((menu.ingredientsJson as any[])?.length || 0) > 3 && (
@@ -347,7 +351,7 @@ const MenuPage: React.FC = () => {
                                                 onClick={() => openForm(menu)}
                                                 className="w-full py-3 bg-slate-50 rounded-xl text-slate-600 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-900 hover:text-white transition-all"
                                             >
-                                                <Edit3 size={16} />
+                                                <Edit3 size={16}/>
                                                 상세 정보 수정
                                             </button>
                                         </div>
@@ -355,10 +359,12 @@ const MenuPage: React.FC = () => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-white rounded-[2rem] border border-slate-200 p-20 text-center flex flex-col items-center gap-4">
-                                <Package size={48} className="text-slate-200" />
+                            <div
+                                className="bg-white rounded-[2rem] border border-slate-200 p-20 text-center flex flex-col items-center gap-4">
+                                <Package size={48} className="text-slate-200"/>
                                 <p className="text-slate-400 font-bold">등록된 메뉴가 없습니다.</p>
-                                <button onClick={() => openForm()} className="mt-4 text-emerald-600 font-black hover:underline">
+                                <button onClick={() => openForm()}
+                                        className="mt-4 text-emerald-600 font-black hover:underline">
                                     첫 번째 메뉴를 등록해보세요
                                 </button>
                             </div>
@@ -373,7 +379,7 @@ const MenuPage: React.FC = () => {
                                     className="w-12 h-12 rounded-2xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white transition-all shadow-sm"
                                     title="뒤로 가기"
                                 >
-                                    <ChevronLeft size={24} />
+                                    <ChevronLeft size={24}/>
                                 </button>
                                 <h1 className="text-2xl font-black tracking-tight">
                                     {viewMode === 'CREATE' ? '신규 메뉴 등록' : '메뉴 정보 수정'}
@@ -382,7 +388,8 @@ const MenuPage: React.FC = () => {
                         </header>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
+                            <div
+                                className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
                                 <h2 className="text-lg font-black mb-8 flex items-center gap-2">
                                     기본 설정
                                 </h2>
@@ -396,7 +403,7 @@ const MenuPage: React.FC = () => {
                                             required
                                             type="text"
                                             value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            onChange={(e) => setFormData({...formData, name: e.target.value})}
                                             className="w-full bg-slate-50 border-2 border-transparent focus:border-black focus:bg-white rounded-2xl p-4 font-bold text-slate-800 outline-none transition-all"
                                             placeholder="예: 시그니처 크림 라떼"
                                         />
@@ -412,7 +419,7 @@ const MenuPage: React.FC = () => {
                                                 type="number"
                                                 step="1"
                                                 value={formData.basePrice}
-                                                onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
+                                                onChange={(e) => setFormData({...formData, basePrice: e.target.value})}
                                                 className="w-full bg-slate-50 border-2 border-transparent focus:border-black focus:bg-white rounded-2xl p-4 font-bold text-slate-800 outline-none transition-all"
                                                 placeholder="0"
                                             />
@@ -429,11 +436,11 @@ const MenuPage: React.FC = () => {
                                                 <button
                                                     key={s}
                                                     type="button"
-                                                    onClick={() => setFormData({ ...formData, status: s })}
+                                                    onClick={() => setFormData({...formData, status: s})}
                                                     className={`flex-1 py-4 rounded-2xl font-black text-sm border-2 transition-all ${formData.status === s
                                                         ? 'bg-black border-black text-white shadow-lg shadow-black/10'
                                                         : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
-                                                        }`}
+                                                    }`}
                                                 >
                                                     {s === 'ACTIVE' ? '현재 판매 중' : '판매 일시 중지'}
                                                 </button>
@@ -444,7 +451,8 @@ const MenuPage: React.FC = () => {
                             </div>
 
                             {/* 레시피 */}
-                            <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
+                            <div
+                                className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-xl shadow-slate-100">
                                 <div className="flex justify-between items-center mb-8">
                                     <h2 className="text-lg font-black flex items-center gap-2">
                                         식재료 레시피 구성
@@ -454,7 +462,7 @@ const MenuPage: React.FC = () => {
                                         onClick={addIngredientRow}
                                         className="text-xs font-black text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-xl transition flex items-center gap-1"
                                     >
-                                        <Plus size={14} />
+                                        <Plus size={14}/>
                                         식재료 추가
                                     </button>
                                 </div>
@@ -473,7 +481,8 @@ const MenuPage: React.FC = () => {
                                                         식재료 선택
                                                     </option>
                                                     {availableIngredients.map((available) => (
-                                                        <option key={available.ingredientPublicId} value={available.ingredientPublicId}>
+                                                        <option key={available.ingredientPublicId}
+                                                                value={available.ingredientPublicId}>
                                                             {available.name}
                                                         </option>
                                                     ))}
@@ -490,7 +499,8 @@ const MenuPage: React.FC = () => {
                                                 className="flex-1 bg-slate-50 rounded-xl p-3 text-sm font-bold focus:bg-white border border-transparent focus:border-slate-200 outline-none transition-all text-center"
                                             />
 
-                                            <div className="flex-1 bg-slate-100 rounded-xl p-3 text-xs font-black text-slate-400 flex items-center justify-center border border-transparent">
+                                            <div
+                                                className="flex-1 bg-slate-100 rounded-xl p-3 text-xs font-black text-slate-400 flex items-center justify-center border border-transparent">
                                                 {ing.unit || '단위'}
                                             </div>
 
@@ -505,7 +515,8 @@ const MenuPage: React.FC = () => {
                                     ))}
 
                                     {formData.ingredients.length === 0 && (
-                                        <div className="text-center py-10 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 text-slate-400 text-sm font-bold">
+                                        <div
+                                            className="text-center py-10 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-200 text-slate-400 text-sm font-bold">
                                             추가된 식재료 레시피가 없습니다.
                                         </div>
                                     )}
@@ -528,7 +539,7 @@ const MenuPage: React.FC = () => {
                                     type="submit"
                                     className="flex-[2] py-5 bg-black text-white rounded-[2rem] font-black shadow-2xl shadow-slate-200 hover:bg-gray-800 active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
-                                    <Save size={20} />
+                                    <Save size={20}/>
                                     {viewMode === 'CREATE' ? '새로운 메뉴 등록 완료' : '메뉴 정보 수정 완료'}
                                 </button>
                             </div>
