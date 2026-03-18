@@ -44,8 +44,8 @@ export interface ReportGenerateRequest {
 // ==================== 폐기 사유 한글 레이블 ====================
 
 export const WASTE_REASON_LABELS: Record<string, string> = {
-    EXPIRED: '유통기한 초과',
-    DAMAGED: '파손',
-    SPOILED: '부패',
-    ETC: '기타',
+    EXPIRED: '유통기한 경과',
+    DAMAGED: '포장 파손',
+    SPOILED: '부패 및 변질',
+    ETC: '기타 사유',
 };
