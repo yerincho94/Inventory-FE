@@ -82,12 +82,22 @@ const StoreManagePage = () => {
 
         setCreateLoading(true);
         try {
-            const response = await createStore({
+            await createStore({
                 name: storeName,
                 businessRegistrationNumber: businessNumber
             });
-            await setDefaultStore(response.storePublicId);
-            navigate('/dashboard', {replace: true});
+
+            // 매장 목록 새로고침
+            const updatedStores = await getMyStores();
+            const activeStores = updatedStores.filter((s) => s.memberStatus === 'ACTIVE');
+            setStores(activeStores);
+
+            // 폼 초기화
+            setStoreName('');
+            setBusinessNumber('');
+
+            // 목록 탭으로 이동
+            setActiveTab('list');
         } catch (err: any) {
             setCreateError(err.response?.data?.message || '매장 생성에 실패했습니다.');
         } finally {

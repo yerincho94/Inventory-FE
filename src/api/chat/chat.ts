@@ -11,8 +11,8 @@ export const createChatThread = (storePublicId: string, request: ChatCreateThrea
   apiClient.post<ChatThreadCreateResponse>(`/api/chat/${storePublicId}/threads`, request);
 
 // 내 채팅 스레드 목록 조회
-export const getMyChatThreads = () =>
-  apiClient.get<ChatThreadSummary[]>('/api/chat/threads');
+export const getMyChatThreads = (storePublicId: string) =>
+  apiClient.get<ChatThreadSummary[]>(`/api/chat/${storePublicId}/threads`);
 
 // 채팅 스레드 메시지 조회
 export const getChatMessages = (threadId: number, cursor?: number) =>

@@ -50,3 +50,23 @@ export function getTypeColor(type: NotificationResponse['type']): string {
       return 'text-gray-600 bg-gray-50';
   }
 }
+
+/**
+ * 알림 타입별 한글 레이블
+ */
+export function getNotificationTypeLabel(type: NotificationResponse['type']): string {
+  switch (type) {
+    case 'INVENTORY_BELOW_THRESHOLD':
+      return '재고 부족';
+    case 'INVENTORY_SHORTAGE_DETECTED':
+      return '재고 부족 감지';
+    case 'MONTHLY_OPS_REPORT_READY':
+      return '월간 보고서';
+    case 'STORE_MEMBER_REGISTERED':
+      return '멤버 등록';
+    case 'STORE_MEMBER_JOINED':
+      return '멤버 가입';
+    default:
+      return '알림';
+  }
+}
