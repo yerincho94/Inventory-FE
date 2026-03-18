@@ -8,6 +8,7 @@ import {
     getStockTakeSheetDetail,
     saveStockTakeDraft
 } from '@/api/stock/stockTake';
+import { getStoreStockSummary } from '@/api/stock/stock';
 import type {
     StockTakeItemQuantityRequest,
     StockTakeSheetCreateRequest,
@@ -94,16 +95,27 @@ const StockTakePage: React.FC = () => {
                     setStatus('DRAFT');
                     setTitle(`${new Date().toLocaleDateString()} 정기 재고 실사`);
 
-                    const ingredients = await getAllIngredients(storePublicId);
+                    const [ingredients, stockSummaryPage] = await Promise.all([
+                        getAllIngredients(storePublicId),
+                        getStoreStockSummary(storePublicId, { includeZeroStock: true }, 0, 1000)
+                    ]);
 
-                    const initialItems: ViewStockTakeItem[] = ingredients.map((ing: any) => ({
-                        ingredientPublicId: ing.ingredientPublicId,
-                        name: ing.name ?? '',
-                        unit: ing.unit ?? '',
-                        stockTakeQty: 0,
-                        theoreticalQty: null,
-                        varianceQty: null
-                    }));
+                    const stockMap = new Map<string, number>();
+                    stockSummaryPage.content.forEach((s: any) => {
+                        stockMap.set(s.ingredientId, s.totalRemainingQuantity);
+                    });
+
+                    const initialItems: ViewStockTakeItem[] = ingredients.map((ing: any) => {
+                        const theoretical = stockMap.get(ing.ingredientPublicId) ?? 0;
+                        return {
+                            ingredientPublicId: ing.ingredientPublicId,
+                            name: ing.name ?? '',
+                            unit: ing.unit ?? '',
+                            stockTakeQty: theoretical,
+                            theoreticalQty: theoretical,
+                            varianceQty: 0
+                        };
+                    });
 
                     setItems(initialItems);
                 }
@@ -411,11 +423,9 @@ const StockTakePage: React.FC = () => {
                                     실사 가이드
                                 </h3>
                                 <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                    1. 각 품목의 실제 수량을 입력하세요. 단위가 다른 품목은 개별 차이
-                                    수량을 확인 바랍니다.
+                                    1. 각 품목의 실제 수량을 입력하세요. 초기값으로 현재 장부 재고가 입력되어 있습니다.
                                     <br />
-                                    2. 저장 후 실사 시트에 장부 재고 기준값이 반영되며, 이후 차이 수량이
-                                    계산됩니다.
+                                    2. 수량을 수정하면 즉시 차이 수량이 계산됩니다.
                                     <br />
                                     3. 최종확정 시 현재 화면에 입력된 값이 그대로 반영되며, 확정 후에는 수정할
                                     수 없습니다.

@@ -2,7 +2,7 @@ import {useState, useEffect, useMemo} from 'react';
 import {getMyStores} from '@/api/store/store.ts';
 import * as SalesApi from '@/api/analytics/salesAnalytics';
 import {getStockAnalysis} from '@/api/analytics/stockAnalytics';
-import type {IngredientUnit, MyStoreResponse, SalesPeakData} from '@/types';
+import type {IngredientUnit ,MyStoreResponse, SalesTrendData} from '@/types';
 import type {SalesSummaryResponse} from '@/types/analytics/salesAnalytics.ts';
 import type {StockAnalyticResponse} from '@/types/analytics/stockAnalytics.ts';
 import {
@@ -234,18 +234,19 @@ const StockLevelChart = ({data}: { data: StockAnalyticResponse[] }) => {
 const DashboardPage = () => {
     const [currentStore, setCurrentStore] = useState<MyStoreResponse | null>(null);
     const [summary, setSummary] = useState<SalesSummaryResponse | null>(null);
-    const [peak, setPeak] = useState<SalesPeakData[]>([]);
     const [stockAnalysis, setStockAnalysis] = useState<StockAnalyticResponse[]>([]);
+    const [hourlyTrend, setHourlyTrend] = useState<SalesTrendData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        let pollingId: ReturnType<typeof setInterval> | null = null;
+        let storeId: string | null = null;
+
         const initDashboard = async () => {
             try {
                 setIsLoading(true);
 
-                let storeId: string | null = null;
                 let targetStore: MyStoreResponse | undefined = undefined;
-
                 const existingId = getStorePublicId();
 
                 if (!existingId) {
@@ -253,7 +254,6 @@ const DashboardPage = () => {
                     if (storesData && storesData.length > 0) {
                         targetStore = storesData[0];
                         storeId = targetStore.storePublicId;
-                        setCurrentStore(targetStore);
                     }
                 } else {
                     storeId = requireStorePublicId();
@@ -263,23 +263,37 @@ const DashboardPage = () => {
 
                 if (storeId && targetStore) {
                     setCurrentStore(targetStore);
-                    const now = new Date();
-                    const todayStart = new Date();
-                    todayStart.setHours(9, 0, 0, 0);
-                    if (now < todayStart) todayStart.setDate(todayStart.getDate() - 1);
-                    const oneMonthAgo = new Date();
-                    oneMonthAgo.setMonth(now.getMonth() - 1);
 
-                    // SalesApi 호출 시 storeId 전달
-                    const [summaryData, peakData, stockData] = await Promise.all([
+                    const now = new Date();
+                    const todayStart = new Date(
+                        now.getFullYear(), now.getMonth(), now.getDate()
+                    );
+
+                    const [summaryData, stockData, hourlyTrendData] = await Promise.all([
                         SalesApi.getSalesSummary(storeId, todayStart, now),
-                        SalesApi.getSalesPeak(storeId, todayStart, now),
-                        getStockAnalysis(storeId)
+                        getStockAnalysis(storeId),
+                        SalesApi.getHourlySalesTrend(storeId, todayStart, now)
                     ]);
 
                     setSummary(summaryData);
-                    setPeak(peakData);
                     setStockAnalysis(stockData);
+                    setHourlyTrend(hourlyTrendData);
+
+                    // 30초마다 오늘 매출 갱신
+                    pollingId = setInterval(async () => {
+                        try {
+                            const pollingNow = new Date();
+                            const pollingTodayStart = new Date(
+                                pollingNow.getFullYear(), pollingNow.getMonth(), pollingNow.getDate()
+                            );
+                            const data = await SalesApi.getSalesSummary(
+                                storeId!, pollingTodayStart, pollingNow
+                            );
+                            setSummary(data);
+                        } catch (err) {
+                            console.error('실시간 매출 갱신 실패:', err);
+                        }
+                    }, 30000);
                 }
             } catch (error) {
                 console.error('대시보드 초기화 실패:', error);
@@ -287,23 +301,21 @@ const DashboardPage = () => {
                 setTimeout(() => setIsLoading(false), 500);
             }
         };
+
         initDashboard();
+
+        return () => {
+            if (pollingId) clearInterval(pollingId);
+        };
     }, []);
 
-    const todayDayOfWeek = new Date().getDay() || 7;
-
     const chartData = useMemo(() => {
-        return peak
-            .filter((item) => item.dayOfWeek === todayDayOfWeek)
-            .sort((a, b) => a.hour - b.hour)
-            .map((item) => ({
-                ...item,
-                time: `${item.hour}시`,
-                orderCount: item.orderCount,
-                // Peak 데이터에 금액이 없다면 주문당 평균 단가를 곱해 가상 매출액 생성 (선택사항)
-                amount: Math.floor(item.orderCount * (summary?.averageOrderAmount || 10000))
-            }));
-    }, [peak, todayDayOfWeek, summary]);
+        return hourlyTrend.map((item) => ({
+            time: item.date.substring(11, 16),
+            amount: Number(item.totalAmount),
+            orderCount: item.orderCount
+        }));
+    }, [hourlyTrend]);
 
     if (isLoading || !currentStore) {
         return <Loading/>;
@@ -363,8 +375,15 @@ const DashboardPage = () => {
                         <div className="h-[320px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData} margin={{top: 10, right: 10, left: 10, bottom: 30}}>
-                                    {/* 배경 가로선 - 더 연한 회색으로 변경 */}
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc"/>
+                                    <defs>
+                                        <linearGradient id="colorHourlySales" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
+                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+
+                                    {/* 가로선만 남겨서 깔끔한 대시보드 느낌 유지 */}
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
 
                                     <XAxis
                                         dataKey="time"
@@ -384,12 +403,15 @@ const DashboardPage = () => {
                                     />
 
                                     <Tooltip
-                                        cursor={{stroke: '#f1f5f9', strokeWidth: 2}}
-                                        formatter={(value: any) => [value.toLocaleString(), "매출액"]}
+                                        cursor={{stroke: '#e2e8f0', strokeWidth: 2}}
+                                        formatter={(value) => {
+                                            if (value == null) return ["0", "매출액"];
+                                            return [Number(value).toLocaleString(), "매출액"];
+                                        }}
                                         contentStyle={{
-                                            borderRadius: '12px',
-                                            border: '1px solid #f1f5f9',
-                                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)',
+                                            borderRadius: '16px',
+                                            border: 'none',
+                                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
                                             padding: '12px'
                                         }}
                                         labelStyle={{fontWeight: 800, color: '#1e293b', marginBottom: '4px'}}

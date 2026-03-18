@@ -40,8 +40,8 @@ const StockLogPage: React.FC = () => {
 
     // --- [상태 관리] ---
     const [loading, setLoading] = useState(false);
-    const [isFirstLoaded, setIsFirstLoaded] = useState(false); // ★ '로딩 중'이 아니라 '데이터를 한 번이라도 받았는가'
-    const [stockHistory, setStockHistory] = useState<StockLogResponse[]>([]);
+    // 핵심: 초기값을 null로 설정하여 '최초 진입 전'임을 명시합니다.
+    const [stockHistory, setStockHistory] = useState<StockLogResponse[] | null>(null);
     const [totalPages, setTotalPages] = useState(0);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
@@ -73,7 +73,7 @@ const StockLogPage: React.FC = () => {
             const response = await getStockLogs(storePublicId, condition, page, 50);
 
             if (page === 0) setStockHistory(response.content);
-            else setStockHistory(prev => [...prev, ...response.content]);
+            else setStockHistory(prev => [...(prev || []), ...response.content]);
 
             setTotalPages(response.totalPages);
             setCurrentPage(response.page);
@@ -82,7 +82,6 @@ const StockLogPage: React.FC = () => {
             console.error("데이터 로드 실패:", error);
         } finally {
             setLoading(false);
-            setIsFirstLoaded(true); // ★ 데이터 호출이 한 번이라도 끝나면 true로 변경
         }
     }, [storePublicId, debouncedSearch, typeFilter, startDate, endDate]);
 
@@ -127,8 +126,8 @@ const StockLogPage: React.FC = () => {
         }
     };
 
-    // ★ 핵심: '한 번도 데이터를 로드한 적이 없을 때만' 전체 화면 로딩을 띄움
-    if (!isFirstLoaded) {
+    // ★ 핵심: '로딩 중'이면서 '데이터가 null(최초)'일 때만 전체 화면 로딩을 띄움
+    if (loading && !stockHistory) {
         return <Loading/>;
     }
 
@@ -197,6 +196,13 @@ const StockLogPage: React.FC = () => {
                 {/* 리스트 영역 */}
                 <div
                     className="mt-4 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col relative transition-all duration-300">
+                    {/* 상단 얇은 로딩 바 (필터링 중 시각적 피드백) */}
+                    {loading && (
+                        <div className="absolute top-0 left-0 w-full h-0.5 bg-gray-100 overflow-hidden z-20">
+                            <div className="h-full bg-black animate-[loading_1.5s_infinite_linear] w-1/3"></div>
+                        </div>
+                    )}
+
                     <div
                         className={`overflow-x-auto transition-opacity duration-200 ${loading && currentPage === 0 ? 'opacity-60' : 'opacity-100'}`}>
                         <table className="w-full text-left text-[11px] border-collapse">
@@ -213,14 +219,14 @@ const StockLogPage: React.FC = () => {
                             <tbody className="divide-y divide-gray-50">
                             {loading && currentPage === 0 ? (
                                 <>{[...Array(5)].map((_, i) => <SkeletonRow key={i}/>)}</>
-                            ) : stockHistory.length === 0 ? (
+                            ) : (stockHistory && stockHistory.length === 0) ? (
                                 <tr>
                                     <td colSpan={6} className="py-20 text-center text-gray-400 font-bold">조회된 내역이
                                         없습니다.
                                     </td>
                                 </tr>
                             ) : (
-                                stockHistory.map((log, index) => {
+                                (stockHistory || []).map((log, index) => {
                                     const config = getTypeConfig(log.type);
                                     const display = getChangeDisplay(log.type, log.changeQuantity);
                                     return (
