@@ -7,13 +7,16 @@ import type {
 
 /**
  * 알림 목록 조회
- * GET /api/notifications
+ * GET /api/notifications/{storePublicId}
  */
-export async function getNotifications(params: {
-  page?: number;
-  size?: number;
-}): Promise<PageResponse<NotificationResponse>> {
-  const response = await apiClient.get('/api/notifications', {
+export async function getNotifications(
+  storePublicId: string,
+  params: {
+    page?: number;
+    size?: number;
+  }
+): Promise<PageResponse<NotificationResponse>> {
+  const response = await apiClient.get(`/api/notifications/${storePublicId}`, {
     params: {
       page: params.page ?? 0,
       size: params.size ?? 20,
@@ -25,10 +28,10 @@ export async function getNotifications(params: {
 
 /**
  * 안 읽은 알림 개수 조회
- * GET /api/notifications/unread-count
+ * GET /api/notifications/{storePublicId}/unread-count
  */
-export async function getUnreadCount(): Promise<number> {
-  const response = await apiClient.get<number>('/api/notifications/unread-count');
+export async function getUnreadCount(storePublicId: string): Promise<number> {
+  const response = await apiClient.get<number>(`/api/notifications/${storePublicId}/unread-count`);
   return response.data;
 }
 
@@ -47,10 +50,10 @@ export async function markAsRead(
 
 /**
  * 알림 전체 읽음 처리
- * PATCH /api/notifications/read-all
+ * PATCH /api/notifications/{storePublicId}/read-all
  */
-export async function markAllAsRead(): Promise<NotificationActionResponse> {
-  const response = await apiClient.patch('/api/notifications/read-all');
+export async function markAllAsRead(storePublicId: string): Promise<NotificationActionResponse> {
+  const response = await apiClient.patch(`/api/notifications/${storePublicId}/read-all`);
   return response.data;
 }
 

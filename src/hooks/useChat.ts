@@ -9,6 +9,15 @@ import type {
   ConnectionStatus,
 } from '@/types';
 
+const buildThreadTitle = (content: string) => {
+  const normalized = content.trim().replace(/\s+/g, ' ');
+  if (!normalized) {
+    return '새 대화';
+  }
+
+  return normalized.length > 24 ? `${normalized.slice(0, 24)}...` : normalized;
+};
+
 export const useChat = () => {
   const [threads, setThreads] = useState<ChatThreadSummary[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
@@ -16,100 +25,42 @@ export const useChat = () => {
   const [isLoadingThreads, setIsLoadingThreads] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('DISCONNECTED');
+  const [currentStoreId, setCurrentStoreId] = useState<string | null>(getStorePublicId());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectedThreadIdRef = useRef<number | null>(null);
+  const creatingThreadPromiseRef = useRef<Promise<number | null> | null>(null);
 
-  // 실시간 이벤트 처리
-  const handleRealtimeEvent = useCallback((event: ChatRealtimeEvent) => {
-    console.log('Realtime event:', event);
+  useEffect(() => {
+    selectedThreadIdRef.current = selectedThreadId;
+  }, [selectedThreadId]);
 
-    switch (event.eventType) {
-      case 'USER_MESSAGE_ACCEPTED':
-        // clientMessageId를 서버 messageId로 매핑
-        if (event.requestMessageId && event.clientMessageId) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.clientMessageId === event.clientMessageId && msg.messageId < 0
-                ? { ...msg, messageId: event.requestMessageId!, status: 'QUEUED' }
-                : msg
-            )
-          );
-        }
-        break;
-
-      case 'CHAT_PROCESSING':
-        // 로딩 상태로 변경
-        if (event.requestMessageId) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.messageId === event.requestMessageId
-                ? { ...msg, status: 'PROCESSING' as const }
-                : msg
-            )
-          );
-        }
-        break;
-
-      case 'CHAT_RESPONSE_CREATED':
-        // 응답 메시지 추가
-        if (event.message) {
-          setMessages((prev) => {
-            // 요청 메시지 상태 업데이트
-            const updated = prev.map((msg) =>
-              msg.messageId === event.requestMessageId
-                ? { ...msg, status: 'COMPLETED' as const }
-                : msg
-            );
-            // 응답 메시지 추가
-            return [...updated, event.message!];
-          });
-
-          // 스레드 목록 갱신 (마지막 메시지 업데이트)
-          loadThreads();
-        }
-        break;
-
-      case 'CHAT_FAILED':
-        // 실패 상태로 변경
-        if (event.requestMessageId) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.messageId === event.requestMessageId
-                ? { ...msg, status: 'FAILED' as const, errorMessage: event.errorMessage || '오류가 발생했습니다' }
-                : msg
-            )
-          );
-        }
-        break;
-    }
-  }, []);
-
-  const { sendMessage } = useChatSocket({
-    onEvent: handleRealtimeEvent,
-    onConnectionChange: setConnectionStatus,
-  });
-
-  // 스레드 목록 로드
   const loadThreads = useCallback(async () => {
+    const storePublicId = getStorePublicId();
+    if (!storePublicId) {
+      console.error('No store selected');
+      setThreads([]);
+      return;
+    }
+
     setIsLoadingThreads(true);
     try {
-      const response = await getMyChatThreads();
+      const response = await getMyChatThreads(storePublicId);
       setThreads(response.data);
     } catch (error) {
       console.error('Failed to load threads:', error);
+      setThreads([]);
     } finally {
       setIsLoadingThreads(false);
     }
   }, []);
 
-  // 메시지 로드
   const loadMessages = useCallback(async (threadId: number) => {
     setIsLoadingMessages(true);
     try {
       const response = await getChatMessages(threadId);
-      // 최신순으로 받아온 메시지를 시간순으로 정렬
       const sortedMessages = [...response.data].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
       setMessages(sortedMessages);
     } catch (error) {
@@ -120,7 +71,6 @@ export const useChat = () => {
     }
   }, []);
 
-  // 새 대화 생성
   const createNewThread = useCallback(async (title: string = '새 대화') => {
     const storePublicId = getStorePublicId();
     if (!storePublicId) {
@@ -132,10 +82,7 @@ export const useChat = () => {
       const response = await createChatThread(storePublicId, { title });
       const newThread = response.data;
 
-      // 스레드 목록 갱신
       await loadThreads();
-
-      // 새 스레드 선택
       setSelectedThreadId(newThread.threadId);
       setMessages([]);
 
@@ -146,99 +93,205 @@ export const useChat = () => {
     }
   }, [loadThreads]);
 
-  // 메시지 전송
-  const sendChatMessage = useCallback(
-    (content: string) => {
-      console.log('[useChat] sendChatMessage called:', {
-        selectedThreadId,
-        contentLength: content?.length,
-        connectionStatus
-      });
+  const ensureThread = useCallback(async (title: string) => {
+    if (selectedThreadIdRef.current) {
+      return selectedThreadIdRef.current;
+    }
 
-      if (!selectedThreadId || !content.trim()) {
-        console.warn('[useChat] Cannot send message - no thread selected or empty content');
+    if (creatingThreadPromiseRef.current) {
+      return creatingThreadPromiseRef.current;
+    }
+
+    const promise = createNewThread(title);
+    creatingThreadPromiseRef.current = promise;
+
+    try {
+      return await promise;
+    } finally {
+      creatingThreadPromiseRef.current = null;
+    }
+  }, [createNewThread]);
+
+  const handleRealtimeEvent = useCallback((event: ChatRealtimeEvent) => {
+    switch (event.eventType) {
+      case 'USER_MESSAGE_ACCEPTED': {
+        const requestMessageId = event.requestMessageId;
+        const clientMessageId = event.clientMessageId;
+
+        if (typeof requestMessageId === 'number' && clientMessageId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.clientMessageId === clientMessageId && msg.messageId < 0
+                ? { ...msg, messageId: requestMessageId, status: 'QUEUED' }
+                : msg,
+            ),
+          );
+        }
+        break;
+      }
+
+      case 'CHAT_PROCESSING':
+        if (event.requestMessageId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.messageId === event.requestMessageId
+                ? { ...msg, status: 'PROCESSING' as const }
+                : msg,
+            ),
+          );
+        }
+        break;
+
+      case 'CHAT_RESPONSE_CREATED': {
+        const requestMessageId = event.requestMessageId;
+        const responseMessage = event.message;
+
+        if (responseMessage) {
+          setMessages((prev) => {
+            const updated = typeof requestMessageId === 'number'
+              ? prev.map((msg) =>
+                  msg.messageId === requestMessageId
+                    ? { ...msg, status: 'COMPLETED' as const }
+                    : msg,
+                )
+              : prev;
+
+            return [...updated, responseMessage];
+          });
+          void loadThreads();
+        }
+        break;
+      }
+
+      case 'CHAT_FAILED':
+        if (event.requestMessageId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.messageId === event.requestMessageId
+                ? {
+                  ...msg,
+                  status: 'FAILED' as const,
+                  errorMessage: event.errorMessage || '오류가 발생했습니다',
+                }
+                : msg,
+            ),
+          );
+        }
+        break;
+    }
+  }, [loadThreads]);
+
+  const { sendMessage } = useChatSocket({
+    onEvent: handleRealtimeEvent,
+    onConnectionChange: setConnectionStatus,
+  });
+
+  const sendChatMessageByThreadId = useCallback((threadId: number, content: string) => {
+    if (!content.trim()) {
+      return;
+    }
+
+    const clientMessageId = `client-${Date.now()}-${Math.random()}`;
+
+    const optimisticMessage: ChatMessage = {
+      messageId: -Date.now(),
+      threadId,
+      role: 'USER',
+      status: 'QUEUED',
+      content: content.trim(),
+      clientMessageId,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    sendMessage({
+      threadId,
+      clientMessageId,
+      content: content.trim(),
+    });
+
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, [sendMessage]);
+
+  const sendChatMessage = useCallback(
+    async (content: string) => {
+      const trimmed = content.trim();
+      if (!trimmed) {
         return;
       }
 
-      const clientMessageId = `client-${Date.now()}-${Math.random()}`;
-      console.log('[useChat] Generated clientMessageId:', clientMessageId);
+      const threadId = await ensureThread(buildThreadTitle(trimmed));
+      if (!threadId) {
+        return;
+      }
 
-      // 낙관적 UI 업데이트
-      const optimisticMessage: ChatMessage = {
-        messageId: -Date.now(), // 임시 음수 ID
-        threadId: selectedThreadId,
-        role: 'USER',
-        status: 'QUEUED',
-        content: content.trim(),
-        clientMessageId,
-        createdAt: new Date().toISOString(),
-      };
-
-      console.log('[useChat] Adding optimistic message to UI');
-      setMessages((prev) => [...prev, optimisticMessage]);
-
-      // WebSocket으로 전송
-      console.log('[useChat] Calling sendMessage via WebSocket');
-      sendMessage({
-        threadId: selectedThreadId,
-        clientMessageId,
-        content: content.trim(),
-      });
-
-      // 스크롤
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      sendChatMessageByThreadId(threadId, trimmed);
     },
-    [selectedThreadId, sendMessage]
+    [ensureThread, sendChatMessageByThreadId],
   );
 
-  // 메시지 재전송
   const retryMessage = useCallback(
     (message: ChatMessage) => {
       if (!message.clientMessageId) {
         return;
       }
 
-      // 기존 메시지를 QUEUED 상태로 변경
       setMessages((prev) =>
         prev.map((msg) =>
           msg.messageId === message.messageId
             ? { ...msg, status: 'QUEUED', errorMessage: null }
-            : msg
-        )
+            : msg,
+        ),
       );
 
-      // 재전송
       sendMessage({
         threadId: message.threadId,
         clientMessageId: message.clientMessageId,
         content: message.content,
       });
     },
-    [sendMessage]
+    [sendMessage],
   );
 
-  // 스레드 선택
   const selectThread = useCallback(
     (threadId: number) => {
       setSelectedThreadId(threadId);
-      loadMessages(threadId);
+      void loadMessages(threadId);
     },
-    [loadMessages]
+    [loadMessages],
   );
 
-  // 초기 로드
   useEffect(() => {
-    loadThreads();
+    void loadThreads();
   }, [loadThreads]);
 
-  // 선택된 스레드의 메시지 로드
   useEffect(() => {
     if (selectedThreadId) {
-      loadMessages(selectedThreadId);
+      void loadMessages(selectedThreadId);
     }
   }, [selectedThreadId, loadMessages]);
+
+  // 매장 변경 감지
+  useEffect(() => {
+    const handleStoreChange = () => {
+      const newStoreId = getStorePublicId();
+      if (newStoreId !== currentStoreId) {
+        setCurrentStoreId(newStoreId);
+        setSelectedThreadId(null);
+        setMessages([]);
+        void loadThreads();
+      }
+    };
+
+    window.addEventListener('storePublicIdChanged', handleStoreChange);
+
+    return () => {
+      window.removeEventListener('storePublicIdChanged', handleStoreChange);
+    };
+  }, [currentStoreId, loadThreads]);
 
   return {
     threads,

@@ -274,20 +274,20 @@ export default function NotificationPage() {
                           {notification.message}
                         </p>
 
-                        {/* 세 번째 줄: 절대 시간 · 타입 (STORE_MEMBER_JOINED, STORE_MEMBER_REGISTERED 제외) */}
+                        {/* 매장 이름 (재고 관련 알림) */}
+                        {(notification.type === 'INVENTORY_SHORTAGE_DETECTED' ||
+                          notification.type === 'INVENTORY_BELOW_THRESHOLD') &&
+                         notification.metadata.storeName && (
+                          <p className="mb-2 text-xs text-slate-500 pl-4">
+                            매장: {notification.metadata.storeName}
+                          </p>
+                        )}
+
+                        {/* 세 번째 줄: 절대 시간 */}
                         <div className="flex items-center gap-2 pl-4">
                           <span className="text-xs text-slate-500">
                             {formatAbsoluteDateTime(notification.createdAt)}
                           </span>
-                          {notification.type !== 'STORE_MEMBER_JOINED' &&
-                           notification.type !== 'STORE_MEMBER_REGISTERED' && (
-                            <>
-                              <span className="text-slate-300">·</span>
-                              <span className="text-xs font-medium text-slate-600">
-                                {notification.type.replace(/_/g, ' ')}
-                              </span>
-                            </>
-                          )}
                         </div>
                       </button>
 
