@@ -9,6 +9,7 @@ import {
   deleteNotification,
 } from '@/api/notification';
 import { getAccessToken } from '@/utils/auth';
+import { getStorePublicId } from '@/utils/store';
 import type { NotificationResponse } from '@/types/notification';
 import type { PageResponse } from '@/types/common/common';
 
@@ -42,6 +43,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   });
 
   const [authToken, setAuthToken] = useState<string | null>(getAccessToken());
+  const [currentStoreId, setCurrentStoreId] = useState<string | null>(getStorePublicId());
   const sseConnectionRef = useRef<{ close: () => void } | null>(null);
   const isConnectedRef = useRef<boolean>(false);
 
@@ -49,8 +51,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
    * 안 읽은 개수 갱신
    */
   const refreshUnreadCount = useCallback(async (): Promise<void> => {
+    const storePublicId = getStorePublicId();
+    if (!storePublicId) {
+      setUnreadCount(0);
+      return;
+    }
+
     try {
-      const count = await getUnreadCount();
+      const count = await getUnreadCount(storePublicId);
       setUnreadCount(count);
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
@@ -62,14 +70,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
    */
   const fetchNotifications = useCallback(
     async (page = 0): Promise<void> => {
+      const storePublicId = getStorePublicId();
+      if (!storePublicId) {
+        setNotifications([]);
+        setError('매장이 선택되지 않았습니다');
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
 
       try {
-        const response: PageResponse<NotificationResponse> = await getNotifications({
-          page,
-          size: 20,
-        });
+        const response: PageResponse<NotificationResponse> = await getNotifications(
+          storePublicId,
+          {
+            page,
+            size: 20,
+          }
+        );
 
         if (page === 0) {
           setNotifications(response.content);
@@ -120,8 +138,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
    * 전체 읽음 처리
    */
   const handleMarkAllAsRead = useCallback(async (): Promise<void> => {
+    const storePublicId = getStorePublicId();
+    if (!storePublicId) {
+      console.error('No store selected');
+      return;
+    }
+
     try {
-      await markAllAsRead();
+      await markAllAsRead(storePublicId);
 
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
@@ -259,6 +283,31 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       isConnectedRef.current = false;
     };
   }, [authToken, refreshUnreadCount, addNewNotification]);
+
+  /**
+   * 매장 변경 감지
+   */
+  useEffect(() => {
+    const handleStoreChange = () => {
+      const newStoreId = getStorePublicId();
+      if (newStoreId !== currentStoreId) {
+        setCurrentStoreId(newStoreId);
+        setNotifications([]);
+        setUnreadCount(0);
+        setPageInfo({
+          currentPage: 0,
+          hasMore: false,
+        });
+        void refreshUnreadCount();
+      }
+    };
+
+    window.addEventListener('storePublicIdChanged', handleStoreChange);
+
+    return () => {
+      window.removeEventListener('storePublicIdChanged', handleStoreChange);
+    };
+  }, [currentStoreId, refreshUnreadCount]);
 
   const value: NotificationContextValue = {
     notifications,
