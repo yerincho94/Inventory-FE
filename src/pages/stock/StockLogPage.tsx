@@ -1,7 +1,7 @@
-import React, {useState, useEffect, useCallback} from 'react';
-import type {StockLogResponse, TransactionType, StockLogSearchCondition, ReferenceType} from '@/types/stock/stockLog';
-import {getStockLogs} from '@/api/stock/stock.ts';
-import {requireStorePublicId} from "@/utils/store.ts";
+import React, { useState, useEffect, useCallback } from 'react';
+import type { StockLogResponse, TransactionType, StockLogSearchCondition, ReferenceType } from '@/types/stock/stockLog';
+import { getStockLogs } from '@/api/stock/stock.ts';
+import { requireStorePublicId } from "@/utils/store.ts";
 import Loading from "@/components/loading/Loading";
 
 const StockLogPage: React.FC = () => {
@@ -29,12 +29,12 @@ const StockLogPage: React.FC = () => {
     };
 
     const getTypeConfig = (type: TransactionType | undefined) => {
-        if (!type) return {label: '기타', bg: 'bg-gray-100', text: 'text-gray-600'};
+        if (!type) return { label: '기타', bg: 'bg-gray-100', text: 'text-gray-600' };
         const configs: Record<TransactionType, { label: string; bg: string; text: string }> = {
-            INBOUND: {label: '입고 (+)', bg: 'bg-blue-50', text: 'text-blue-700'},
-            DEDUCTION: {label: '판매 (-)', bg: 'bg-red-50', text: 'text-red-700'},
-            WASTE: {label: '폐기 (-)', bg: 'bg-red-50', text: 'text-red-700'},
-            ADJUST: {label: '조정 (+)', bg: 'bg-blue-50', text: 'text-blue-700'} // 보정은 +로 처리
+            INBOUND: { label: '입고 (+)', bg: 'bg-blue-50', text: 'text-blue-700' },
+            DEDUCTION: { label: '판매 (-)', bg: 'bg-red-50', text: 'text-red-700' },
+            WASTE: { label: '폐기 (-)', bg: 'bg-red-50', text: 'text-red-700' },
+            ADJUST: { label: '조정 (+)', bg: 'bg-blue-50', text: 'text-blue-700' } // 보정은 +로 처리
         };
         return configs[type];
     };
@@ -45,12 +45,12 @@ const StockLogPage: React.FC = () => {
         switch (type) {
             case 'INBOUND':
             case 'ADJUST':
-                return {text: `+${amount}`, color: 'text-blue-600'};
+                return { text: `+${amount}`, color: 'text-blue-600' };
             case 'DEDUCTION':
             case 'WASTE':
-                return {text: `-${amount}`, color: 'text-red-600'};
+                return { text: `-${amount}`, color: 'text-red-600' };
             default:
-                return {text: `${amount}`, color: 'text-gray-600'};
+                return { text: `${amount}`, color: 'text-gray-600' };
         }
     };
 
@@ -82,7 +82,7 @@ const StockLogPage: React.FC = () => {
     }, [fetchLogs]);
 
     if (loading && currentPage === 0) {
-        return <Loading/>;
+        return <Loading />;
     }
 
     return (
@@ -124,10 +124,10 @@ const StockLogPage: React.FC = () => {
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3">
                             <i className="ph ph-calendar text-gray-400 text-sm"></i>
                             <input type="date" className="bg-transparent text-xs font-black py-2.5 outline-none"
-                                   value={startDate} onChange={(e) => setStartDate(e.target.value)}/>
+                                value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                             <span className="text-gray-300">~</span>
                             <input type="date" className="bg-transparent text-xs font-black py-2.5 outline-none"
-                                   value={endDate} onChange={(e) => setEndDate(e.target.value)}/>
+                                value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                         </div>
                         <select
                             className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-black outline-none cursor-pointer focus:bg-white focus:border-black transition-all"
@@ -149,74 +149,74 @@ const StockLogPage: React.FC = () => {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-[11px] border-collapse">
                             <thead className="bg-gray-50 border-b border-gray-100">
-                            <tr className="text-gray-400 font-black uppercase tracking-wider">
-                                <th className="px-6 py-4 w-40">날짜 / 시간</th>
-                                <th className="px-6 py-4 w-28 text-center">변동 유형</th>
-                                <th className="px-6 py-4">품목 및 상세 정보</th>
-                                <th className="px-6 py-4 text-right">변동량</th>
-                                <th className="px-6 py-4 text-right">최종 재고</th>
-                                <th className="px-6 py-4 w-32">처리자</th>
-                            </tr>
+                                <tr className="text-gray-400 font-black uppercase tracking-wider">
+                                    <th className="px-6 py-4 w-40">날짜 / 시간</th>
+                                    <th className="px-6 py-4 w-28 text-center">변동 유형</th>
+                                    <th className="px-6 py-4">품목 및 상세 정보</th>
+                                    <th className="px-6 py-4 text-right">변동량</th>
+                                    <th className="px-6 py-4 text-right">최종 재고</th>
+                                    <th className="px-6 py-4 w-32">처리자</th>
+                                </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                            {stockHistory.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="py-20 text-center text-gray-400 font-bold">조회된 내역이
-                                        없습니다.
-                                    </td>
-                                </tr>
-                            ) : (
-                                stockHistory.map((log, index) => {
-                                    const config = getTypeConfig(log.type);
-                                    const display = getChangeDisplay(log.type, log.changeQuantity);
+                                {stockHistory.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="py-20 text-center text-gray-400 font-bold">조회된 내역이
+                                            없습니다.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    stockHistory.map((log, index) => {
+                                        const config = getTypeConfig(log.type);
+                                        const display = getChangeDisplay(log.type, log.changeQuantity);
 
-                                    return (
-                                        <tr key={index} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 text-gray-400 font-medium whitespace-nowrap">
-                                                {log.createdAt ? new Date(log.createdAt).toLocaleString('ko-KR', {
-                                                    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-                                                }) : '-'}
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span
-                                                    className={`inline-block px-2 py-0.5 rounded-lg text-[9px] font-black border ${config.bg} ${config.text} border-transparent`}>
-                                                    {config.label}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col gap-0.5">
+                                        return (
+                                            <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4 text-gray-400 font-medium whitespace-nowrap">
+                                                    {log.createdAt ? new Date(log.createdAt).toLocaleString('ko-KR', {
+                                                        month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                                                    }) : '-'}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span
+                                                        className={`inline-block px-2 py-0.5 rounded-lg text-[9px] font-black border ${config.bg} ${config.text} border-transparent`}>
+                                                        {config.label}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span
+                                                                className="font-black text-gray-900">{log.ingredientName}</span>
+                                                            <span
+                                                                className="px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded text-[9px] font-bold border border-gray-200">
+                                                                {getReferenceLabel(log.referenceType)} {log.referenceId ? `#${log.referenceId}` : ''}
+                                                            </span>
+                                                        </div>
+                                                        <span
+                                                            className="text-[9px] text-gray-300 font-mono tracking-tighter">BATCH: {log.batchId?.split('-')[0] || '-'}</span>
+                                                    </div>
+                                                </td>
+                                                <td className={`px-6 py-4 text-right font-black text-sm ${display.color}`}>
+                                                    {display.text} {log.unit}
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-black text-gray-900">
+                                                    {log.balanceAfter?.toLocaleString() ?? 0} {log.unit}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center gap-2">
+                                                        <div
+                                                            className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[9px] font-black text-gray-500 uppercase">
+                                                            {log.workerName?.substring(0, 1) || 'S'}
+                                                        </div>
                                                         <span
-                                                            className="font-black text-gray-900">{log.ingredientName}</span>
-                                                        <span
-                                                            className="px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded text-[9px] font-bold border border-gray-200">
-                                                            {getReferenceLabel(log.referenceType)} {log.referenceId ? `#${log.referenceId}` : ''}
-                                                        </span>
+                                                            className="font-bold text-gray-700">{log.workerName || '시스템'}</span>
                                                     </div>
-                                                    <span
-                                                        className="text-[9px] text-gray-300 font-mono tracking-tighter">BATCH: {log.batchId?.split('-')[0] || '-'}</span>
-                                                </div>
-                                            </td>
-                                            <td className={`px-6 py-4 text-right font-black text-sm ${display.color}`}>
-                                                {display.text} {log.unit}
-                                            </td>
-                                            <td className="px-6 py-4 text-right font-black text-gray-900">
-                                                {log.balanceAfter?.toLocaleString() ?? 0} {log.unit}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-2">
-                                                    <div
-                                                        className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[9px] font-black text-gray-500 uppercase">
-                                                        {log.workerName?.substring(0, 1) || 'S'}
-                                                    </div>
-                                                    <span
-                                                        className="font-bold text-gray-700">{log.workerName || '시스템'}</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
                             </tbody>
                         </table>
                     </div>
