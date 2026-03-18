@@ -2,7 +2,7 @@ import {useState, useEffect, useMemo} from 'react';
 import {getMyStores} from '@/api/store/store.ts';
 import * as SalesApi from '@/api/analytics/salesAnalytics';
 import {getStockAnalysis} from '@/api/analytics/stockAnalytics';
-import type {MyStoreResponse, SalesPeakData} from '@/types';
+import type {IngredientUnit, MyStoreResponse, SalesPeakData} from '@/types';
 import type {SalesSummaryResponse} from '@/types/analytics/salesAnalytics.ts';
 import type {StockAnalyticResponse} from '@/types/analytics/stockAnalytics.ts';
 import {
@@ -31,6 +31,7 @@ interface CustomTooltipPayload<T> {
     payload: T;
     name: string;
     value: number;
+    unit: IngredientUnit;
     color?: string;
 }
 
@@ -58,7 +59,7 @@ const StockTooltip = ({active, payload}: CustomTooltipProps<StockAnalyticRespons
     if (active && payload && payload.length > 0) {
         return (
             <div className="bg-white p-2 px-3 border border-gray-100 rounded-xl shadow-lg">
-                <p className="text-xs font-bold text-indigo-600">현재 {payload[0].value}개</p>
+                <p className="text-xs font-bold text-indigo-600">현재 {payload[0].value} {payload[0].payload.unit}</p>
             </div>
         );
     }
@@ -354,7 +355,7 @@ const DashboardPage = () => {
                     <div className="lg:col-span-2 rounded-3xl bg-white p-8 shadow-sm border border-gray-100">
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                                <TrendingUp className="h-5 w-5 text-indigo-600"/> 실시간 매출 분석
+                                <TrendingUp className="h-5 w-5 text-gray-900"/> 실시간 매출 분석
                             </h3>
                             <span
                                 className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded">UNIT: 원</span>
@@ -362,56 +363,56 @@ const DashboardPage = () => {
                         <div className="h-[320px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData} margin={{top: 10, right: 10, left: 10, bottom: 30}}>
-
-                                    {/* 가로선만 남겨서 깔끔한 대시보드 느낌 유지 */}
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
+                                    {/* 배경 가로선 - 더 연한 회색으로 변경 */}
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc"/>
 
                                     <XAxis
                                         dataKey="time"
                                         height={50}
-                                        tick={{fontSize: 11, fontWeight: 700, fill: '#94a3b8'}}
+                                        tick={{fontSize: 11, fontWeight: 700, fill: '#cbd5e1'}}
                                         axisLine={false}
                                         tickLine={false}
                                         dy={10}
-                                        // 시간 데이터가 24개나 되므로, 겹치지 않게 적절히 조절합니다.
-                                        interval={0} // 3시간 단위로 표시 (0시, 3시, 6시...)
+                                        interval={0}
                                     />
 
                                     <YAxis
-                                        tick={{fontSize: 11, fontWeight: 700, fill: '#94a3b8'}}
+                                        tick={{fontSize: 11, fontWeight: 700, fill: '#cbd5e1'}}
                                         axisLine={false}
                                         tickLine={false}
-                                        // 원화 단위 표시 (예: 10,000 -> 10k 또는 그대로 표시)
                                         tickFormatter={(value) => value.toLocaleString()}
                                     />
 
                                     <Tooltip
-                                        cursor={{stroke: '#e2e8f0', strokeWidth: 2}}
-                                        formatter={(value: any) => {
-                                            if (value === undefined || value === null) return ["0", "매출액"];
-
-                                            return [value.toLocaleString(), "매출액"];
-                                        }}
+                                        cursor={{stroke: '#f1f5f9', strokeWidth: 2}}
+                                        formatter={(value: any) => [value.toLocaleString(), "매출액"]}
                                         contentStyle={{
-                                            borderRadius: '16px',
-                                            border: 'none',
-                                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                                            borderRadius: '12px',
+                                            border: '1px solid #f1f5f9',
+                                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)',
                                             padding: '12px'
                                         }}
                                         labelStyle={{fontWeight: 800, color: '#1e293b', marginBottom: '4px'}}
-                                        itemStyle={{fontWeight: 700, color: '#6366f1'}}
+                                        itemStyle={{fontWeight: 700, color: '#475569'}}
                                     />
 
                                     <Area
                                         type="monotone"
-                                        dataKey="amount" // 데이터 객체의 매출액 키값
-                                        stroke="#6366f1"
-                                        strokeWidth={4} // 선을 조금 더 두껍게 해서 강조
-                                        fillOpacity={1}
-                                        fill="url(#colorHourlySales)"
-                                        // 점(Dot)을 추가하여 시간대별 포인트를 강조하고 싶다면 아래 주석 해제
-                                        dot={{r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff'}}
-                                        activeDot={{r: 6, strokeWidth: 0}}
+                                        dataKey="amount"
+                                        stroke="#1e293b"    // 선 색상을 진한 그레이/블랙 계열로
+                                        strokeWidth={3}
+                                        fillOpacity={0}     // 아래쪽 채우기 색상 완전히 제거
+                                        dot={{
+                                            r: 3,
+                                            fill: '#fff',
+                                            strokeWidth: 2,
+                                            stroke: '#1e293b' // 점 테두리도 선과 동일하게
+                                        }}
+                                        activeDot={{
+                                            r: 5,
+                                            fill: '#1e293b',
+                                            strokeWidth: 0
+                                        }}
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>
