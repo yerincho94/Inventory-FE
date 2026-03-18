@@ -227,13 +227,13 @@ export default function DisposalPage() {
                                     <tr key={item.wastePublicId} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-8 py-6 text-gray-400 font-bold">{new Date(item.wasteAt).toLocaleDateString()}</td>
                                         <td className="px-8 py-6 font-black text-gray-900">{item.ingredientName}</td>
-                                        <td className="px-8 py-6 text-right font-black text-gray-600">{item.quantity}</td>
+                                        <td className="px-8 py-6 text-right font-black text-gray-600">{item.quantity} {item.unit}</td>
                                         <td className="px-8 py-6 text-right font-black text-red-500">-
                                             ₩{item.amount.toLocaleString()}</td>
                                         <td className="px-8 py-6 text-center">
                                                 <span
                                                     className="px-3 py-1 rounded-full text-[10px] font-black bg-white border border-gray-200 text-gray-500 shadow-sm">
-                                                    {REASON_MAP[item.reason]?.label}
+                                                    {REASON_MAP[item.wasteReason]?.label}
                                                 </span>
                                         </td>
                                     </tr>
