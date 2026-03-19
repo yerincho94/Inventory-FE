@@ -320,6 +320,7 @@ const StockShortagePage: React.FC = () => {
                                             <th className="px-6 py-3 text-center">주문 필요량</th>
                                             <th className="px-6 py-3 text-center">현재 가용고</th>
                                             <th className="bg-gray-100 px-6 py-3 text-center text-black">부족 수량</th>
+                                            <th className="px-6 py-3 text-center">상태</th>
                                         </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -347,19 +348,28 @@ const StockShortagePage: React.FC = () => {
                                                 </td>
 
                                                 <td className="px-6 py-4 text-center text-sm font-bold text-gray-900">
-                                                    {item.requiredAmount.toLocaleString()} {item.unit}
+                                                    {Math.round(item.requiredAmount).toLocaleString()} {item.unit}
                                                 </td>
 
                                                 <td className="px-6 py-4 text-center text-sm font-bold text-gray-500">
-                                                    {Math.max(0, item.requiredAmount - item.shortageAmount).toLocaleString()} {item.unit}
+                                                    {Math.max(0, Math.round(item.requiredAmount - item.shortageAmount)).toLocaleString()} {item.unit}
                                                 </td>
 
                                                 <td className="bg-gray-100 px-6 py-4 text-center">
                                                         <span
                                                             className="inline-flex items-center gap-1.5 font-black text-black">
                                                             <ArrowRight className="h-3.5 w-3.5 text-gray-400"/>
-                                                            {item.shortageAmount.toLocaleString()} {item.unit}
+                                                            {Math.round(item.shortageAmount).toLocaleString()} {item.unit}
                                                         </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-black uppercase tracking-wider ${
+                                                        item.status === 'PENDING'
+                                                            ? 'bg-rose-100 text-rose-600'
+                                                            : 'bg-emerald-100 text-emerald-600'
+                                                    }`}>
+                                                        {item.status === 'PENDING' ? '부족' : '해결'}
+                                                    </span>
                                                 </td>
                                             </tr>
                                         ))}
