@@ -109,7 +109,7 @@ export default function StockAnalyticsPage() {
 
                     {/* 재고 부족 */}
                     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-xs font-black text-gray-400 uppercase mb-4">재고 부족 순위</h3>
+                        <h3 className="text-xs font-black text-gray-400 uppercase mb-4">재고 순위</h3>
                         <div className="h-[280px]">
                             <StockLevelChart data={data}/>
                         </div>
@@ -129,7 +129,7 @@ export default function StockAnalyticsPage() {
     };
 
     if (loading) {
-        return <Loading />;
+        return <Loading/>;
     }
 
     return (
@@ -171,7 +171,8 @@ function SummaryCard({icon, label, value, subText, isWarning}: {
     isWarning?: boolean
 }) {
     return (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 flex flex-col justify-between h-full shadow-sm hover:shadow-md transition-shadow">
+        <div
+            className="rounded-2xl border border-gray-200 bg-white p-5 flex flex-col justify-between h-full shadow-sm hover:shadow-md transition-shadow">
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{label}</span>

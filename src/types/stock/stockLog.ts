@@ -5,9 +5,10 @@ export type ReferenceType = "INBOUND" | "SALE" | "WASTE" | "STOCK_TAKING" | "OTH
 
 
 export interface StockLogSearchCondition {
-    startAt?: string;
-    endAt?: string;
-    type?: TransactionType | undefined;
+    startDate?: string;
+    endDate?: string;
+    refType?: ReferenceType | undefined;
+    transactionType?: TransactionType | undefined;
     ingredientName?: string;
 }
 

@@ -17,11 +17,10 @@ interface Props {
 // 1. 커스텀 툴팁을 위한 Props 타입 정의
 interface CustomTooltipProps {
     active?: boolean;
-    payload?: {
-        value: number | string;
-    }[];
+    payload?: { payload: StockAnalyticResponse; value: number }[];
     label?: string;
 }
+
 
 // 2. any 대신 명시적인 타입 사용
 const CustomTooltip = ({active, payload, label}: CustomTooltipProps) => {
@@ -30,7 +29,7 @@ const CustomTooltip = ({active, payload, label}: CustomTooltipProps) => {
             <div className="rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm">
                 <p className="text-xs font-bold text-gray-500 mb-1">{label}</p>
                 <p className="text-sm font-black text-indigo-600">
-                    {String(payload[0].value)}개
+                    {String(payload[0].value)} {payload[0].payload.unit}
                 </p>
                 <p className="text-[10px] text-gray-400 mt-0.5">현재 재고</p>
             </div>
