@@ -94,13 +94,13 @@ export async function recordWaste(storePublicId: string, request: DisposalReques
  * GET /api/disposal/{storePublicId}
  */
 
-export async function getWasteRecords(storePublicId: string, condition: DisposalSearchCondition, page: number = 0, size: number = 20): Promise<PageResponse<DisposalResponse>> {
+export async function getWasteRecords(storePublicId: string, condition: DisposalSearchCondition, page: number = 0, size: number = 20, sort: string = 'wasteAt,desc'): Promise<PageResponse<DisposalResponse>> {
     const response = await apiClient.get<PageResponse<DisposalResponse>>(`/api/disposal/${storePublicId}`, {
         params: {
             ...condition,
             page,
             size,
-            sort: 'wasteAt,desc'
+            sort
         },
     });
     return response.data;

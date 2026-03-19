@@ -120,9 +120,6 @@ export default function StockPage() {
                                 onChange={(e) => setCondition(prev => ({...prev, includeZeroStock: e.target.checked}))}
                                 className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                             />
-                            <label htmlFor="zeroStock" className="text-sm font-bold text-gray-700 cursor-pointer">
-                                품절 품목 포함 조회
-                            </label>
                         </div>
                     </div>
 
@@ -151,7 +148,7 @@ export default function StockPage() {
                         </div>
                         <div
                             className="grid grid-cols-12 gap-4 text-xs font-black uppercase tracking-wide text-gray-500">
-                            <div className="col-span-2">품목 ID</div>
+                            <div className="col-span-2">번호</div>
                             <div className="col-span-4">품목명</div>
                             <div className="col-span-2 text-right">전체 재고</div>
                             <div className="col-span-1 text-center">배치 수</div>
@@ -166,7 +163,7 @@ export default function StockPage() {
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-200">
-                            {items.map((item) => (
+                            {items.map((item, index) => (
                                 <div
                                     key={item.ingredientId}
                                     className="cursor-pointer px-6 py-5 hover:bg-gray-50 transition-colors"
@@ -174,7 +171,7 @@ export default function StockPage() {
                                 >
                                     <div className="grid grid-cols-12 items-center gap-4">
                                         <div className="col-span-2 font-mono text-xs text-gray-400">
-                                            {item.ingredientId.substring(0, 8)}
+                                            {(page * 15) + index + 1}
                                         </div>
                                         <div className="col-span-4 font-bold text-gray-900">
                                             {item.ingredientName}
