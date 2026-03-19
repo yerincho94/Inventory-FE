@@ -135,8 +135,8 @@ export default function NotificationPage() {
                   type="button"
                   onClick={() => setFilter('all')}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${filter === 'all'
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-700 hover:bg-slate-100'
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-700 hover:bg-slate-100'
                     }`}
                 >
                   전체
@@ -145,8 +145,8 @@ export default function NotificationPage() {
                   type="button"
                   onClick={() => setFilter('unread')}
                   className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${filter === 'unread'
-                      ? 'bg-slate-900 text-white'
-                      : 'text-slate-700 hover:bg-slate-100'
+                    ? 'bg-slate-900 text-white'
+                    : 'text-slate-700 hover:bg-slate-100'
                     }`}
                 >
                   안 읽음
@@ -271,8 +271,8 @@ export default function NotificationPage() {
                         </p>
 
                         {/* 매장 이름 (재고 관련 알림) */}
-                        {(notification.type === 'INVENTORY_SHORTAGE_DETECTED' ||
-                          notification.type === 'INVENTORY_BELOW_THRESHOLD') &&
+                        {(notification.type === 'STOCK_SHORTAGE_DETECTED' ||
+                          notification.type === 'STOCK_BELOW_THRESHOLD') &&
                           notification.metadata.storeName && (
                             <p className="mb-2 text-xs text-slate-500 pl-4">
                               매장: {notification.metadata.storeName}
