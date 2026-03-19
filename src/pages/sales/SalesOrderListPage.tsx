@@ -1,8 +1,4 @@
-/**
- * 주문 목록 페이지
- */
-
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useCallback} from 'react';
 import {getSalesOrders} from '@/api';
 import {requireStorePublicId} from '@/utils/store';
 import type {SalesOrderResponse, SalesOrderStatus} from '@/types/sales/salesOrder.ts';
@@ -10,12 +6,10 @@ import type {PageResponse} from '@/types/common/common';
 import SalesOrderDetailModal from './SalesOrderDetailModal';
 import {ChevronLeft, ChevronRight} from 'lucide-react';
 import Loading from '@/components/loading/Loading';
+import axios from 'axios';
 
 type VIEW = 'LIST' | 'DETAIL';
 
-/**
- * 주문 상태 뱃지
- */
 function StatusBadge({status}: { status: SalesOrderStatus }) {
     const styles = {
         COMPLETED: 'bg-blue-100 text-blue-700 border border-blue-200',
@@ -56,7 +50,13 @@ function formatAmount(amount: number): string {
     return amount.toLocaleString('ko-KR');
 }
 
+function formatDate(d: Date): string {
+    return d.toISOString().slice(0, 10);
+}
+
 export default function SalesOrderListPage() {
+    const today = new Date();
+
     const [view, setView] = useState<VIEW>('LIST');
     const [pageData, setPageData] = useState<PageResponse<SalesOrderResponse> | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<SalesOrderResponse | null>(
@@ -65,30 +65,45 @@ export default function SalesOrderListPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(0);
+    const [searchTrigger, setSearchTrigger] = useState(0);
 
     const storePublicId = requireStorePublicId();
 
+    const [from, setFrom] = useState<string>('');
+    const [to, setTo] = useState<string>('');
+    const [status, setStatus] = useState<SalesOrderStatus | ''>('');
+    const [amountMin, setAmountMin] = useState<string>('');
+    const [amountMax, setAmountMax] = useState<string>('');
+
     // 주문 목록 조회
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const response = await getSalesOrders(storePublicId, {
                 page,
-                size: 20
+                size: 20,
+                from: from ? `${from}T00:00:00+09:00` : undefined,
+                to: to ? `${to}T23:59:59+09:00` : undefined,
+                status: status || undefined,
+                amountMin: amountMin ? Number(amountMin) : undefined,
+                amountMax: amountMax ? Number(amountMax) : undefined,
             });
             setPageData(response.data);
         } catch (err) {
-            console.error('주문 목록 조회 실패:', err);
-            setError('주문 목록을 불러오는데 실패했습니다.');
+            if (axios.isAxiosError(err) && err.response?.data?.message) {
+                setError(err.response.data.message);
+            } else {
+                setError('주문 목록을 불러오는데 실패했습니다.');
+            }
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [storePublicId, page, from, to, status, amountMin, amountMax]);
 
     useEffect(() => {
         fetchOrders();
-    }, [page]);
+    }, [page, searchTrigger]);
 
     // 주문 상세 보기
     const handleViewDetail = (order: SalesOrderResponse) => {
@@ -104,7 +119,7 @@ export default function SalesOrderListPage() {
 
     // 환불 후 목록 새로고침
     const handleRefunded = () => {
-        fetchOrders();
+        setSearchTrigger(prev => prev + 1);
         handleCloseDetail();
     };
 
@@ -123,6 +138,95 @@ export default function SalesOrderListPage() {
                     <p className="mt-3 text-sm text-gray-500">
                         매장의 모든 주문 내역을 확인할 수 있습니다.
                     </p>
+                </div>
+
+                {/* 필터 영역 */}
+                <div className="mb-6 flex flex-wrap items-end gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    {/* 기간 */}
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-semibold text-slate-600">기간</label>
+                        <input
+                            type="date"
+                            value={from}
+                            onChange={(e) => setFrom(e.target.value)}
+                            className="text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                        />
+                        <span className="text-slate-400">~</span>
+                        <input
+                            type="date"
+                            value={to}
+                            max={formatDate(today)}
+                            onChange={(e) => setTo(e.target.value)}
+                            className="text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                        />
+                    </div>
+
+                    {/* 상태 */}
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-semibold text-slate-600">상태</label>
+                        <select
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value as SalesOrderStatus | '')}
+                            className="text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                        >
+                            <option value="">전체</option>
+                            <option value="COMPLETED">완료</option>
+                            <option value="REFUNDED">환불</option>
+                        </select>
+                    </div>
+
+                    {/* 금액 범위 */}
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm font-semibold text-slate-600">금액</label>
+                        <input
+                            type="number"
+                            min="0"
+                            placeholder="최소"
+                            value={amountMin}
+                            onChange={(e) => setAmountMin(e.target.value)}
+                            className="text-sm border border-slate-200 rounded-xl px-3 py-2 w-24 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                        />
+                        <span className="text-slate-400">~</span>
+                        <input
+                            type="number"
+                            placeholder="최대"
+                            value={amountMax}
+                            onChange={(e) => setAmountMax(e.target.value)}
+                            className="text-sm border border-slate-200 rounded-xl px-3 py-2 w-24 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                        />
+                    </div>
+
+                    {/* 조회 버튼 */}
+                    <button
+                        onClick={() => {
+                            if (page === 0) {
+                                setSearchTrigger(prev => prev + 1);
+                            } else {
+                                setPage(0);
+                            }
+                        }}
+                        className="bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-slate-700 transition-all"
+                    >
+                        조회
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            setFrom('');
+                            setTo('');
+                            setStatus('');
+                            setAmountMin('');
+                            setAmountMax('');
+                            if (page === 0) {
+                                setSearchTrigger(prev => prev + 1);
+                            } else {
+                                setPage(0);
+                            }
+                        }}
+                        className="text-sm text-slate-500 hover:text-slate-900 px-3 py-2 rounded-xl border border-slate-200 bg-white transition-all"
+                    >
+                        초기화
+                    </button>
                 </div>
 
                 {/* 에러 메시지 */}
