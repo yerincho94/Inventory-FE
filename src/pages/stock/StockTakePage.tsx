@@ -284,7 +284,7 @@ const StockTakePage: React.FC = () => {
             return <span className="text-slate-300">생성 후 계산</span>;
         }
 
-        return item.theoreticalQty.toFixed(2);
+        return Math.round(item.theoreticalQty);
     };
 
     const renderVariance = (item: ViewStockTakeItem) => {
@@ -293,10 +293,10 @@ const StockTakePage: React.FC = () => {
         }
 
         if (item.varianceQty > 0) {
-            return `+${item.varianceQty.toFixed(2)}`;
+            return `+${Math.round(item.varianceQty)}`;
         }
 
-        return item.varianceQty.toFixed(2);
+        return Math.round(item.varianceQty);
     };
 
     const getVarianceTextColor = (item: ViewStockTakeItem) => {
@@ -592,8 +592,8 @@ const StockTakePage: React.FC = () => {
                                     {summary.comparableCount === 0
                                         ? '생성 후 계산'
                                         : summary.variance > 0
-                                            ? `+${summary.variance.toFixed(2)}`
-                                            : summary.variance.toFixed(2)}
+                                            ? `+${Math.round(summary.variance)}`
+                                            : Math.round(summary.variance)}
                                 </p>
                             </div>
                         </div>

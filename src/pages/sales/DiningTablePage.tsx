@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
     Map as MapIcon,
-    Printer,
     Trash2,
     Edit3,
     X,
@@ -365,10 +364,6 @@ const DiningTablePage = () => {
                                     <p className="text-[10px] text-gray-500 mt-2 font-black uppercase tracking-widest">선택됨: {selectedIds.length} / 전체: {tables.length}</p>
                                 </div>
                             </div>
-                            <button onClick={() => window.print()} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-900 hover:text-white transition-all shadow-sm font-bold text-xs flex items-center gap-2">
-                                <Printer size={14} />
-                                인쇄하기
-                            </button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">

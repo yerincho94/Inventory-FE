@@ -134,22 +134,20 @@ export default function NotificationPage() {
                 <button
                   type="button"
                   onClick={() => setFilter('all')}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                    filter === 'all'
+                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${filter === 'all'
                       ? 'bg-slate-900 text-white'
                       : 'text-slate-700 hover:bg-slate-100'
-                  }`}
+                    }`}
                 >
                   전체
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilter('unread')}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                    filter === 'unread'
+                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${filter === 'unread'
                       ? 'bg-slate-900 text-white'
                       : 'text-slate-700 hover:bg-slate-100'
-                  }`}
+                    }`}
                 >
                   안 읽음
                 </button>
@@ -234,9 +232,8 @@ export default function NotificationPage() {
                 return (
                   <div
                     key={notification.notificationId}
-                    className={`border-b border-slate-100 transition-colors ${
-                      !notification.isRead ? 'bg-indigo-50/30' : 'bg-white'
-                    } ${selectedIds.has(notification.notificationId) ? 'bg-slate-50' : ''}`}
+                    className={`border-b border-slate-100 transition-colors ${!notification.isRead ? 'bg-indigo-50/30' : 'bg-white'
+                      } ${selectedIds.has(notification.notificationId) ? 'bg-slate-50' : ''}`}
                   >
                     <div className="flex items-start gap-4 px-6 py-4">
                       {/* 체크박스 */}
@@ -257,9 +254,8 @@ export default function NotificationPage() {
                         {/* 첫 번째 줄: 안 읽음 점 + 타이틀 + 시간 */}
                         <div className="mb-2 flex items-center gap-2">
                           <span
-                            className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${
-                              !notification.isRead ? 'bg-indigo-600' : 'bg-slate-300'
-                            }`}
+                            className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${!notification.isRead ? 'bg-indigo-600' : 'bg-slate-300'
+                              }`}
                           />
                           <span className="text-base font-bold text-slate-900 flex-1">
                             {notification.title}
@@ -277,11 +273,11 @@ export default function NotificationPage() {
                         {/* 매장 이름 (재고 관련 알림) */}
                         {(notification.type === 'INVENTORY_SHORTAGE_DETECTED' ||
                           notification.type === 'INVENTORY_BELOW_THRESHOLD') &&
-                         notification.metadata.storeName && (
-                          <p className="mb-2 text-xs text-slate-500 pl-4">
-                            매장: {notification.metadata.storeName}
-                          </p>
-                        )}
+                          notification.metadata.storeName && (
+                            <p className="mb-2 text-xs text-slate-500 pl-4">
+                              매장: {notification.metadata.storeName}
+                            </p>
+                          )}
 
                         {/* 세 번째 줄: 절대 시간 · 타입 (STORE_MEMBER_JOINED, STORE_MEMBER_REGISTERED, MONTHLY_OPS_REPORT_READY 제외) */}
                         <div className="flex items-center gap-2 pl-4">
@@ -290,15 +286,15 @@ export default function NotificationPage() {
                           </span>
                           {
                             notification.type !== 'STORE_MEMBER_JOINED' &&
-                              notification.type !== 'STORE_MEMBER_REGISTERED' &&
-                              notification.type !== 'MONTHLY_OPS_REPORT_READY' && (
-                            <>
-                              <span className="text-slate-300">·</span>
-                              <span className="text-xs font-medium text-slate-600">
-                                {getNotificationTypeLabel(notification.type)}
-                              </span>
-                            </>
-                          )}
+                            notification.type !== 'STORE_MEMBER_REGISTERED' &&
+                            notification.type !== 'MONTHLY_OPS_REPORT_READY' && (
+                              <>
+                                <span className="text-slate-300">·</span>
+                                <span className="text-xs font-medium text-slate-600">
+                                  {getNotificationTypeLabel(notification.type)}
+                                </span>
+                              </>
+                            )}
                         </div>
                       </button>
 
