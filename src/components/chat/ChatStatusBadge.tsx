@@ -46,8 +46,8 @@ export const ChatStatusBadge = ({ status, isProcessing }: ChatStatusBadgeProps) 
   const { text, dotColor, animation } = getStatusInfo();
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 rounded-full text-sm">
-      <div className={`w-2 h-2 rounded-full ${dotColor} ${animation}`} />
+    <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/50 rounded-full text-xs sm:text-sm">
+      <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${dotColor} ${animation}`} />
       <span className="text-gray-700 font-medium">{text}</span>
     </div>
   );

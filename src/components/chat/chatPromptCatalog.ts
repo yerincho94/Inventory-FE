@@ -115,7 +115,7 @@ export const CHAT_GUIDED_PROMPT_GROUPS: ChatGuidedPromptGroup[] = [
                     },
                     {
                         label: '임계치 미만 재고',
-                        prompt: '임계치 미만의 재고를 보여줘',
+                        prompt: '현재 임계치 미만의 재고를 보여줘',
                     },
                     {
                         label: '특정 재료 배치 확인',
@@ -129,12 +129,12 @@ export const CHAT_GUIDED_PROMPT_GROUPS: ChatGuidedPromptGroup[] = [
                 columns: 2,
                 prompts: [
                     {
-                        label: '입고 내역',
-                        prompt: '입고 내역 보여줘',
+                        label: '이번 달 입고 내역',
+                        prompt: '이번 달 입고 내역 보여줘',
                     },
                     {
-                        label: '재고 변동 로그',
-                        prompt: '재고 변동 내역 보여줘',
+                        label: '오늘의 재고 변동 로그',
+                        prompt: '오늘의 재고 변동 내역 보여줘',
                     },
                     {
                         label: '상태 별 로그',
@@ -148,12 +148,17 @@ export const CHAT_GUIDED_PROMPT_GROUPS: ChatGuidedPromptGroup[] = [
                 columns: 2,
                 prompts: [
                     {
-                        label: '부족 이력 요약',
-                        prompt: '재고 부족 이력을 보여줘',
+                        label: '이번 주 부족 이력 요약',
+                        prompt: '이번 주 재고 부족 이력을 보여줘',
                     },
                     {
                         label: '미해결 부족 건',
                         prompt: '현재 해결되지 않은 재고 부족 건들 보여줘',
+                    },
+                    {
+                        label: '',
+                        prompt: '',
+                        description: 'placeholder',
                     },
                 ],
             },
@@ -166,8 +171,8 @@ export const CHAT_COMPACT_PROMPTS: ChatGuidedPrompt[] = [
     { label: '최근 30일 매출 추이', prompt: '최근 30일 매출 추이 보여줘' },
     { label: '재고 부족 품목', prompt: '재고 부족 품목 보여줘' },
     { label: '전체 재고 현황', prompt: '전체 재고 현황 보여줘' },
-    { label: '최근 입고 내역', prompt: '최근 입고 내역 보여줘' },
-    { label: '재고 변동 내역', prompt: '재고 변동 내역 보여줘' },
+    { label: '이번 달 입고 내역', prompt: '이번 달 입고 내역 보여줘' },
+    { label: '오늘의 재고 변동 내역', prompt: '오늘의 재고 변동 내역 보여줘' },
 ];
 
 export const CHAT_ASSISTANT_SUGGESTION_FALLBACKS: Record<string, ChatGuidedPrompt[]> = {
@@ -180,13 +185,13 @@ export const CHAT_ASSISTANT_SUGGESTION_FALLBACKS: Record<string, ChatGuidedPromp
     stock: [
         { label: '임계치 미만 재고', prompt: '임계치 미만의 재고를 보여줘' },
         { label: '전체 재고 현황', prompt: '전체 재고 현황 보여줘' },
-        { label: '최근 입고 내역', prompt: '최근 입고 내역 보여줘' },
-        { label: '최근 재고 변동', prompt: '최근 재고 변동 내역 보여줘' },
+        { label: '이번 달 입고 내역', prompt: '이번 달 입고 내역 보여줘' },
+        { label: '오늘의 재고 변동 내역', prompt: '오늘의 재고 변동 내역 보여줘' },
     ],
     default: [
         { label: '오늘 매출 요약', prompt: '오늘 매출 요약해줘' },
         { label: '임계치 미만 재고', prompt: '임계치 미만의 재고를 보여줘' },
-        { label: '최근 입고 내역', prompt: '최근 입고 내역 보여줘' },
+        { label: '이번 달 입고 내역', prompt: '이번 달 입고 내역 보여줘' },
     ],
 };
 

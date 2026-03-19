@@ -1,4 +1,4 @@
-import { PlusCircle, MessageSquare } from 'lucide-react';
+import { PlusCircle, MessageSquare, X, PanelLeftClose, PanelLeft } from 'lucide-react';
 import type { ChatThreadSummary } from '@/types';
 
 interface ChatSidebarProps {
@@ -7,6 +7,9 @@ interface ChatSidebarProps {
   onSelectThread: (threadId: number) => void;
   onNewChat: () => void;
   isLoading?: boolean;
+  onClose?: () => void;
+  onToggleCollapse?: () => void;
+  isCollapsed?: boolean;
 }
 
 export const ChatSidebar = ({
@@ -15,6 +18,9 @@ export const ChatSidebar = ({
   onSelectThread,
   onNewChat,
   isLoading,
+  onClose,
+  onToggleCollapse,
+  isCollapsed = false,
 }: ChatSidebarProps) => {
   const formatDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return '';
@@ -35,20 +41,52 @@ export const ChatSidebar = ({
   };
 
   return (
-    <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+    <div className="w-80 lg:w-80 max-w-full bg-gray-50 border-r border-gray-200 flex flex-col h-screen shadow-xl lg:shadow-none overflow-hidden">
+      {/* 접기 섹션 */}
+      {onToggleCollapse && (
+        <div className="hidden lg:flex items-center justify-between p-3 border-b border-gray-200 bg-white">
+          <div className={`flex items-center gap-2 transition-opacity ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}>
+            <MessageSquare className="w-5 h-5 text-gray-700" />
+            {!isCollapsed && <span className="text-sm font-semibold text-gray-700">대화 목록</span>}
+          </div>
+          <button
+            onClick={onToggleCollapse}
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            title={isCollapsed ? "사이드바 펼치기" : "사이드바 접기"}
+          >
+            {isCollapsed ? (
+              <PanelLeft className="w-5 h-5 text-gray-600" />
+            ) : (
+              <PanelLeftClose className="w-5 h-5 text-gray-600" />
+            )}
+          </button>
+        </div>
+      )}
+
       {/* 헤더 */}
-      <div className="p-4 border-b border-gray-200 bg-white">
+      <div className={`p-4 pt-6 lg:pt-4 border-b border-gray-200 bg-white relative transition-opacity ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        {/* 모바일 닫기 버튼 */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden absolute top-6 right-4 p-1.5 hover:bg-gray-100 rounded-lg transition-colors z-10"
+            title="닫기"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+        )}
+
         <button
           onClick={onNewChat}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-sky-200 text-sky-600 rounded-xl hover:bg-sky-50 hover:border-sky-300 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+          className="w-full flex items-center justify-center gap-2 px-4 lg:px-6 py-2.5 lg:py-3 bg-white border-2 border-sky-200 text-sky-600 rounded-xl hover:bg-sky-50 hover:border-sky-300 transition-all duration-200 font-medium shadow-sm hover:shadow-md text-sm lg:text-base"
         >
-          <PlusCircle className="w-5 h-5" />
+          <PlusCircle className="w-4 h-4 lg:w-5 lg:h-5" />
           새 대화 시작
         </button>
       </div>
 
       {/* 스레드 목록 */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`flex-1 overflow-y-auto transition-opacity ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {isLoading ? (
           <div className="p-4 text-center text-gray-500">
             <div className="animate-pulse space-y-3">

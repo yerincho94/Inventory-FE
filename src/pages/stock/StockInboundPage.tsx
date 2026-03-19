@@ -39,14 +39,13 @@ export default function StockInboundPage() {
 
     const [searchCondition, setSearchCondition] = useState<InboundSearchCondition>({});
     const [tempCondition, setTempCondition] = useState<InboundSearchCondition>({});
-    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
-    const fetchList = async (page: number = 0, condition: InboundSearchCondition = {}, sort: 'desc' | 'asc' = 'desc') => {
+    const fetchList = async (page: number = 0, condition: InboundSearchCondition = {}) => {
         if (!storePublicId) return;
 
         try {
             setLoading(true);
-            const sortParam = `createdAt,${sort}`;
+            const sortParam = `createdAt,desc`;
             const data = await getStockInbounds(storePublicId, condition, page, 20, sortParam);
 
             const confirmedInbounds =
@@ -64,7 +63,7 @@ export default function StockInboundPage() {
     };
 
     useEffect(() => {
-        fetchList(0, searchCondition, sortOrder);
+        fetchList(0, searchCondition);
     }, [storePublicId]);
 
     const handleRowClick = (publicId: string) => {
@@ -78,24 +77,19 @@ export default function StockInboundPage() {
     };
 
     const handlePageChange = (page: number) => {
-        fetchList(page, searchCondition, sortOrder);
+        fetchList(page, searchCondition);
     };
 
     const handleSearch = () => {
         setSearchCondition(tempCondition);
-        fetchList(0, tempCondition, sortOrder);
+        fetchList(0, tempCondition);
     };
 
     const handleReset = () => {
         const emptyCondition = {};
         setTempCondition(emptyCondition);
         setSearchCondition(emptyCondition);
-        fetchList(0, emptyCondition, sortOrder);
-    };
-
-    const handleSortChange = (order: 'desc' | 'asc') => {
-        setSortOrder(order);
-        fetchList(currentPage, searchCondition, order);
+        fetchList(0, emptyCondition);
     };
 
     const hasData = useMemo(() => inbounds.length > 0, [inbounds]);
@@ -171,19 +165,6 @@ export default function StockInboundPage() {
                                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                             />
                         </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold text-gray-700">
-                                입고번호
-                            </label>
-                            <input
-                                type="text"
-                                value={tempCondition.inboundPublicId || ''}
-                                onChange={(e) => setTempCondition({ ...tempCondition, inboundPublicId: e.target.value })}
-                                placeholder="입고번호로 검색 (예: 93ac11e2)"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                            />
-                        </div>
                     </div>
 
                     <div className="mt-6 flex gap-2">
@@ -222,17 +203,7 @@ export default function StockInboundPage() {
 
                 <div className="border border-gray-200 bg-white">
                     <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <h3 className="text-sm font-black uppercase tracking-wide text-gray-700">입고 목록</h3>
-                            <select
-                                value={sortOrder}
-                                onChange={(e) => handleSortChange(e.target.value as 'desc' | 'asc')}
-                                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                            >
-                                <option value="desc">최신순</option>
-                                <option value="asc">과거순</option>
-                            </select>
-                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-wide text-gray-700 mb-3">입고 목록</h3>
                         <div className="grid grid-cols-12 gap-4 text-xs font-black uppercase tracking-wide text-gray-500">
                             <div className="col-span-3">입고번호</div>
                             <div className="col-span-3">거래처</div>
@@ -350,7 +321,7 @@ export default function StockInboundPage() {
                 storePublicId={storePublicId}
                 inboundPublicId={selectedInboundId}
                 onConfirmSuccess={() => {
-                    fetchList(currentPage, searchCondition, sortOrder);
+                    fetchList(currentPage, searchCondition);
                 }}
             />
         </div>

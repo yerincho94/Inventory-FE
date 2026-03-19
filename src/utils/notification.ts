@@ -38,8 +38,8 @@ export function formatAbsoluteDateTime(dateString: string): string {
  */
 export function getTypeColor(type: NotificationResponse['type']): string {
   switch (type) {
-    case 'INVENTORY_BELOW_THRESHOLD':
-    case 'INVENTORY_SHORTAGE_DETECTED':
+    case 'STOCK_BELOW_THRESHOLD':
+    case 'STOCK_SHORTAGE_DETECTED':
       return 'text-red-600 bg-red-50';
     case 'MONTHLY_OPS_REPORT_READY':
       return 'text-blue-600 bg-blue-50';
@@ -56,10 +56,10 @@ export function getTypeColor(type: NotificationResponse['type']): string {
  */
 export function getNotificationTypeLabel(type: NotificationResponse['type']): string {
   switch (type) {
-    case 'INVENTORY_BELOW_THRESHOLD':
+    case 'STOCK_BELOW_THRESHOLD':
+      return '재고 소진 임박';
+    case 'STOCK_SHORTAGE_DETECTED':
       return '재고 부족';
-    case 'INVENTORY_SHORTAGE_DETECTED':
-      return '재고 부족 감지';
     case 'MONTHLY_OPS_REPORT_READY':
       return '월간 보고서';
     case 'STORE_MEMBER_REGISTERED':
