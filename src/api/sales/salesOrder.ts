@@ -1,5 +1,5 @@
 import apiClient from '../user/client.ts';
-import type { SalesOrderResponse } from '@/types/sales/salesOrder.ts';
+import type { SalesOrderStatus, SalesOrderResponse } from '@/types/sales/salesOrder.ts';
 import type { PageResponse } from '@/types/common/common';
 
 /**
@@ -9,7 +9,17 @@ import type { PageResponse } from '@/types/common/common';
  * @param storePublicId 매장 Public ID (UUID)
  * @param params 페이지네이션 파라미터
  */
-export const getSalesOrders = (storePublicId: string, params?: { page?: number; size?: number }) =>
+export const getSalesOrders = (
+    storePublicId: string,
+    params?: {
+        page?: number;
+        size?: number;
+        from?: string;
+        to?: string;
+        status?: SalesOrderStatus;
+        amountMin?: number;
+        amountMax?: number;
+    }) =>
     apiClient.get<PageResponse<SalesOrderResponse>>(`/api/orders/${storePublicId}`, { params });
 
 /**

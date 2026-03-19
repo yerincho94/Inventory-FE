@@ -682,7 +682,7 @@ export default function PurchaseOrderListPage() {
                     {/* 페이지 헤더 */}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-extrabold text-gray-900">발주 관리</h1>
+                            <h1 className="text-2xl font-extrabold text-gray-900">발주 목록</h1>
                             <p className="text-sm text-gray-600 mt-1">
                                 발주서를 생성하고 관리합니다.
                             </p>

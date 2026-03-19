@@ -360,7 +360,8 @@ export default function SalesAnalyticsPage() {
                                                 if (interval === 'day') return tick.substring(5, 10); // MM-DD
                                                 if (interval === 'week') {
                                                     const [, m, d] = tick.split('-');
-                                                    return `${parseInt(m)}/${parseInt(d)}주`;
+                                                    const weekOfMonth = Math.ceil(parseInt(d) / 7);
+                                                    return `${parseInt(m)}월 ${weekOfMonth}주차`;
                                                 }
                                                 if (interval === 'month') {
                                                     const [y, m] = tick.split('-');
@@ -374,11 +375,23 @@ export default function SalesAnalyticsPage() {
                                             axisLine={false}
                                             tickLine={false}
                                             tick={{ fontSize: 12, fill: '#64748b' }}
-                                            tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
+                                            tickFormatter={(value: number) => `${(value / 10000).toFixed(0)}만`}
                                             dx={-10}
                                         />
                                         <Tooltip
                                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                            labelFormatter={(label) => {
+                                                if (interval === 'week') {
+                                                    const [y, m, d] = label.split('-');
+                                                    const startDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+                                                    const endDate = new Date(startDate);
+                                                    endDate.setDate(startDate.getDate() + 6);
+                                                    const startStr = `${startDate.getMonth() + 1}/${startDate.getDate()}`;
+                                                    const endStr = `${endDate.getMonth() + 1}/${endDate.getDate()}`;
+                                                    return `${startStr} ~ ${endStr}`;
+                                                }
+                                                return label;
+                                            }}
                                             formatter={(value: ValueType | undefined) => {
                                                 if (value === undefined) return ['0원', '매출액'];
                                                 return [`${formatAmount(Number(value))}원`, '매출액'];
