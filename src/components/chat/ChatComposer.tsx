@@ -45,9 +45,10 @@ export const ChatComposer = ({
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white px-6 py-4">
+    <div className="bg-white px-3 sm:px-6 pb-3 sm:pb-4">
+      <div className="border-t border-gray-200 mb-3 sm:mb-4" />
       <div className="mx-auto max-w-4xl">
-        <div className="flex items-end gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3 transition-all focus-within:border-sky-300 focus-within:ring-2 focus-within:ring-sky-100">
+        <div className="flex items-end gap-2 sm:gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-2 sm:p-3 transition-all focus-within:border-sky-300 focus-within:ring-2 focus-within:ring-sky-100">
           <textarea
             ref={textareaRef}
             value={input}
@@ -62,9 +63,9 @@ export const ChatComposer = ({
             type="button"
             onClick={handleSend}
             disabled={!input.trim() || disabled}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-sky-500 text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+            className="flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-xl bg-sky-500 text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
       </div>

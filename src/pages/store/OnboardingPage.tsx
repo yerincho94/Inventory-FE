@@ -180,14 +180,23 @@ const OnboardingPage = () => {
                                     <input
                                         id="businessNumber"
                                         type="text"
+                                        inputMode="numeric"
                                         value={businessNumber}
-                                        onChange={(e) => setBusinessNumber(e.target.value.replace(/\D/g, ''))}
+                                        onChange={(e) => {
+                                            const cleaned = e.target.value.replace(/\D/g, '');
+                                            setBusinessNumber(cleaned.slice(0, 10));
+                                        }}
+                                        onPaste={(e) => {
+                                            e.preventDefault();
+                                            const pastedText = e.clipboardData.getData('text');
+                                            const cleaned = pastedText.replace(/\D/g, '');
+                                            setBusinessNumber(cleaned.slice(0, 10));
+                                        }}
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-shadow"
                                         placeholder="0000000000"
-                                        maxLength={10}
                                         required
                                     />
-                                    <p className="mt-2 text-xs text-gray-500">10자리 숫자를 입력해주세요</p>
+                                    <p className="mt-2 text-xs text-gray-500">10자리 숫자를 입력해주세요 (하이픈 자동 제거)</p>
                                 </div>
 
                                 {createError && (
