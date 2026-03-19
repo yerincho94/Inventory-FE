@@ -7,6 +7,7 @@ export interface StockShortageItem {
     unit: string;
     requiredAmount: number;
     shortageAmount: number;
+    status: 'PENDING' | 'CLOSED';
 }
 
 export interface StockShortageGroup {
