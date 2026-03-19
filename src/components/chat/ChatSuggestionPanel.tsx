@@ -2,7 +2,6 @@ import {
     CHAT_COMPACT_PROMPTS,
     CHAT_GUIDED_PROMPT_GROUPS,
     type ChatGuidedPrompt,
-    type ChatGuidedPromptSection,
 } from './chatPromptCatalog';
 import type { ChatMessage } from '@/types';
 
@@ -12,19 +11,11 @@ interface ChatSuggestionPanelProps {
     messages?: ChatMessage[];
 }
 
-const getSectionGridClass = (section: ChatGuidedPromptSection) => {
-    if (section.columns === 3) {
-        return 'grid gap-3 md:grid-cols-2 xl:grid-cols-3';
-    }
-
-    return 'grid gap-3 md:grid-cols-2';
-};
-
-const PromptChip = ({
-                        prompt,
-                        onSelect,
-                        compact = false,
-                    }: {
+const PromptButton = ({
+                          prompt,
+                          onSelect,
+                          compact = false,
+                      }: {
     prompt: ChatGuidedPrompt;
     onSelect: (prompt: string) => void;
     compact?: boolean;
@@ -32,20 +23,11 @@ const PromptChip = ({
     <button
         type="button"
         onClick={() => onSelect(prompt.prompt)}
-        className={`text-left transition-all duration-200 ${
-            compact
-                ? 'rounded-full border border-sky-100 bg-white px-3 py-2 text-sm font-medium text-sky-700 shadow-sm hover:border-sky-300 hover:bg-sky-50'
-                : 'w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50 hover:shadow-md'
-        }`}
+        className={compact
+            ? 'inline-flex h-9 items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700'
+            : 'inline-flex min-h-9 max-w-full items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700'}
     >
-        <div className={compact ? '' : 'space-y-2'}>
-            <p className={compact ? 'text-sm font-medium' : 'text-base font-semibold text-slate-900'}>
-                {prompt.label}
-            </p>
-            {!compact && prompt.description && (
-                <p className="text-sm leading-6 text-slate-500">{prompt.description}</p>
-            )}
-        </div>
+        <span className="truncate">{prompt.label}</span>
     </button>
 );
 
@@ -56,10 +38,10 @@ export const ChatSuggestionPanel = ({
                                     }: ChatSuggestionPanelProps) => {
     if (variant === 'compact') {
         return (
-            <section className="mb-8 rounded-3xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-cyan-50 p-5 shadow-sm">
-                <div className="flex flex-wrap gap-2.5">
+            <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap gap-2">
                     {CHAT_COMPACT_PROMPTS.map((prompt) => (
-                        <PromptChip key={prompt.prompt} prompt={prompt} onSelect={onSelectPrompt} compact />
+                        <PromptButton key={prompt.prompt} prompt={prompt} onSelect={onSelectPrompt} compact />
                     ))}
                 </div>
             </section>
@@ -67,35 +49,33 @@ export const ChatSuggestionPanel = ({
     }
 
     return (
-        <section className="w-full max-w-6xl">
-            <div className="grid gap-4 xl:grid-cols-2">
+        <section className="w-full max-w-7xl">
+            <div className="grid items-start gap-4 xl:grid-cols-2">
                 {CHAT_GUIDED_PROMPT_GROUPS.map((group) => {
                     const Icon = group.icon;
                     return (
                         <div
                             key={group.id}
-                            className="rounded-3xl border border-slate-200 bg-white/95 p-5 text-left shadow-[0_18px_45px_rgba(15,23,42,0.06)]"
+                            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                         >
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
-                                    <Icon className="h-6 w-6" />
+                            <div className="mb-4 flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                                    <Icon className="h-4 w-4" />
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-slate-900">{group.title}</h3>
-                                    <p className="mt-1 text-sm leading-6 text-slate-600">{group.description}</p>
-                                </div>
+                                <h3 className="text-base font-semibold text-slate-900">{group.title}</h3>
                             </div>
 
-                            <div className="mt-5 space-y-6">
-                                {group.sections.map((section, index) => (
-                                    <div key={section.id}>
-                                        {index > 0 && <div className="mb-5 h-px w-full bg-slate-100" />}
+                            <div className="space-y-4">
+                                {group.sections.map((section) => (
+                                    <div key={section.id} className="space-y-2">
                                         {section.title && (
-                                            <h4 className="mb-3 text-sm font-semibold text-slate-900">{section.title}</h4>
+                                            <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                                {section.title}
+                                            </h4>
                                         )}
-                                        <div className={getSectionGridClass(section)}>
+                                        <div className="flex flex-wrap gap-2">
                                             {section.prompts.map((prompt) => (
-                                                <PromptChip key={prompt.prompt} prompt={prompt} onSelect={onSelectPrompt} />
+                                                <PromptButton key={prompt.prompt} prompt={prompt} onSelect={onSelectPrompt} />
                                             ))}
                                         </div>
                                     </div>
