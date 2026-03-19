@@ -101,21 +101,21 @@ export const ChatMessageBubble = ({
   const contentToRender = isUser ? message.content : parsedContent.body || message.content;
 
   return (
-    <div className={`mb-5 flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex max-w-[80%] gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`mb-4 sm:mb-5 flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex max-w-[90%] sm:max-w-[85%] lg:max-w-[80%] gap-2 sm:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
         {!isUser && (
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-gray-50 shadow-sm">
+          <div className="flex h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-gray-50 shadow-sm">
             <img
               src="/images/chatbot.png"
               alt="수셰프"
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain sm:object-cover"
             />
           </div>
         )}
 
         <div className="flex flex-col gap-2">
           <div
-            className={`rounded-3xl px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-all ${isUser
+            className={`rounded-3xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-all ${isUser
               ? 'rounded-tr-sm border-2 border-sky-100 bg-white text-gray-800'
               : 'rounded-tl-sm border border-gray-100 bg-white text-gray-700'
               } ${isFailed ? 'border-red-200 bg-red-50/50' : ''}`}
@@ -129,13 +129,13 @@ export const ChatMessageBubble = ({
           </div>
 
           {!isUser && visibleSuggestions.length > 0 && onQuickQuestion && (
-            <div className="flex flex-wrap gap-2 pl-1">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 pl-0 sm:pl-1">
               {visibleSuggestions.map((suggestion) => (
                 <button
                   key={`${message.messageId}-${suggestion}`}
                   type="button"
                   onClick={() => onQuickQuestion(suggestion)}
-                  className="rounded-full border border-sky-100 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 transition-all hover:border-sky-300 hover:bg-sky-100"
+                  className="rounded-full border border-sky-100 bg-sky-50 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-sky-700 transition-all hover:border-sky-300 hover:bg-sky-100"
                 >
                   {suggestion}
                 </button>
@@ -143,7 +143,7 @@ export const ChatMessageBubble = ({
             </div>
           )}
 
-          <div className={`flex items-center gap-2 px-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
+          <div className={`flex items-center gap-2 px-1 sm:px-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
             <span className="text-xs text-gray-500">{formatTime(message.createdAt)}</span>
             {isProcessing && (
               <div className="flex gap-1">
@@ -158,9 +158,9 @@ export const ChatMessageBubble = ({
             <button
               type="button"
               onClick={() => onRetry(message)}
-              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+              className="flex items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
               다시 전송
             </button>
           )}

@@ -171,19 +171,6 @@ export default function StockInboundPage() {
                                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                             />
                         </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold text-gray-700">
-                                입고번호
-                            </label>
-                            <input
-                                type="text"
-                                value={tempCondition.inboundPublicId || ''}
-                                onChange={(e) => setTempCondition({ ...tempCondition, inboundPublicId: e.target.value })}
-                                placeholder="입고번호로 검색 (예: 93ac11e2)"
-                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-                            />
-                        </div>
                     </div>
 
                     <div className="mt-6 flex gap-2">

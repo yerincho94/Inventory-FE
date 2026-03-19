@@ -155,6 +155,11 @@ export const CHAT_GUIDED_PROMPT_GROUPS: ChatGuidedPromptGroup[] = [
                         label: '미해결 부족 건',
                         prompt: '현재 해결되지 않은 재고 부족 건들 보여줘',
                     },
+                    {
+                        label: '',
+                        prompt: '',
+                        description: 'placeholder',
+                    },
                 ],
             },
         ],

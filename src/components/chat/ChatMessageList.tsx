@@ -11,16 +11,18 @@ import type { ChatMessage } from '@/types';
 interface ChatMessageListProps {
     messages: ChatMessage[];
     isLoading?: boolean;
+    pendingQuestion?: string | null;
     onRetry?: (message: ChatMessage) => void;
     onQuickQuestion?: (question: string) => void;
 }
 
 export const ChatMessageList = ({
-                                    messages,
-                                    isLoading,
-                                    onRetry,
-                                    onQuickQuestion,
-                                }: ChatMessageListProps) => {
+    messages,
+    isLoading,
+    pendingQuestion,
+    onRetry,
+    onQuickQuestion,
+}: ChatMessageListProps) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -36,34 +38,44 @@ export const ChatMessageList = ({
         || isSalesPeakPromptCompleted(suggestion, messages)
         || isTopMenuRankingPromptCompleted(suggestion, messages);
 
-    if (messages.length === 0 && !isLoading) {
-        return <ChatWelcomePanel onQuickQuestion={onQuickQuestion || (() => undefined)} messages={messages} />;
+    // messages가 비어 있고, pendingQuestion도 없고, 로딩 중도 아닐 때만 Welcome 화면
+    if (messages.length === 0 && !isLoading && !pendingQuestion) {
+        return (
+            <div className="flex flex-1 overflow-y-auto">
+                <ChatWelcomePanel onQuickQuestion={onQuickQuestion || (() => undefined)} messages={messages} />
+            </div>
+        );
     }
 
     return (
-        <div ref={containerRef} className="flex-1 overflow-y-auto px-5 py-5 scroll-smooth">
-            <div className="mx-auto max-w-6xl">
-                <div className="mb-8 animate-in fade-in duration-500 pt-2">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-50 shadow-sm">
+        <div ref={containerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 scroll-smooth">
+            <div className="mx-auto max-w-5xl">
+                <div className="mb-8 sm:mb-10 animate-in fade-in duration-700 pt-2 sm:pt-4">
+                    <div className="flex flex-col items-center gap-3 sm:gap-4 text-center">
+                        <div className="flex h-20 w-20 sm:h-28 sm:w-28 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-gray-50 shadow-lg ring-1 ring-gray-100">
                             <img
                                 src="/images/chatbot.png"
                                 alt="수셰프"
-                                className="h-full w-full object-cover"
+                                className="h-full w-full object-contain sm:object-cover"
                             />
                         </div>
-                        <h1 className="text-2xl font-bold text-gray-900 italic">
-                            수셰프 <span className="not-italic text-sky-500">AI</span>
-                        </h1>
+                        <div className="space-y-1.5 sm:space-y-2">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 italic">
+                                수셰프 <span className="not-italic text-sky-500">AI</span>
+                            </h1>
+                            <p className="text-sm sm:text-base text-gray-500">
+                                매출·재고·입고 관련 내용을 바로 확인해보세요.
+                            </p>
+                        </div>
                     </div>
 
                     {onQuickQuestion && (
-                        <div className="mt-5">
+                        <div className="mt-6 sm:mt-8">
                             <ChatSuggestionPanel onSelectPrompt={onQuickQuestion} messages={messages} variant="compact" />
                         </div>
                     )}
 
-                    <div className="mt-6 h-px w-full bg-gray-100" />
+                    <div className="mt-6 sm:mt-8 h-px w-full bg-gray-100" />
                 </div>
 
                 {messages.map((message) => (
@@ -76,17 +88,27 @@ export const ChatMessageList = ({
                     />
                 ))}
 
-                {isLoading && (
+                {/* pendingQuestion: Welcome에서 바로 전환 시 사용자 질문 버블 표시 */}
+                {pendingQuestion && messages.length === 0 && (
+                    <div className="mb-4 flex justify-end">
+                        <div className="max-w-[85%] sm:max-w-[70%] rounded-3xl rounded-tr-sm bg-sky-500 px-4 py-3 text-sm text-white shadow-sm">
+                            {pendingQuestion}
+                        </div>
+                    </div>
+                )}
+
+                {/* 로딩 dot 애니메이션: isLoading 혹은 pendingQuestion 시 */}
+                {(isLoading || (pendingQuestion && messages.length === 0)) && (
                     <div className="mb-4 flex justify-start">
-                        <div className="flex max-w-[70%] gap-3">
-                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-gray-50 shadow-sm">
+                        <div className="flex max-w-[85%] sm:max-w-[70%] gap-2 sm:gap-3">
+                            <div className="flex h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-100 bg-gray-50 shadow-sm">
                                 <img
                                     src="/images/chatbot.png"
                                     alt="수셰프"
-                                    className="h-full w-full object-cover"
+                                    className="h-full w-full object-contain sm:object-cover"
                                 />
                             </div>
-                            <div className="rounded-3xl rounded-tl-sm border border-gray-100 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                            <div className="rounded-3xl rounded-tl-sm border border-gray-100 bg-white px-3 sm:px-4 py-2.5 sm:py-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
                                 <div className="flex gap-1">
                                     <div className="h-2 w-2 animate-bounce rounded-full bg-sky-400" style={{ animationDelay: '0ms' }} />
                                     <div className="h-2 w-2 animate-bounce rounded-full bg-sky-400" style={{ animationDelay: '150ms' }} />
