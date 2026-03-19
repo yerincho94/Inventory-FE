@@ -24,6 +24,7 @@ const formatToKstIsoString = (date: Date): string => {
     const seconds = pad(date.getSeconds());
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
 };
+
 // 1. 매출 추이 (Trend)
 export const getSalesTrend = async (
     storePublicId: string,
@@ -96,6 +97,25 @@ export const getSalesSummary = async (
                 from: formatToKstIsoString(from),
                 to: formatToKstIsoString(to),
                 interval
+            }
+        }
+    );
+    return response.data;
+};
+
+// 5. 실시간 매출 추이 (Trend)
+export const getHourlySalesTrend = async (
+    storePublicId: string,
+    from: Date,
+    to: Date
+): Promise<SalesTrendData[]> => {
+    const response = await apiClient.get<SalesTrendData[]>(
+        `${BASE_URL}/${storePublicId}/sales/trend`,
+        {
+            params: {
+                from: formatToKstIsoString(from),
+                to: formatToKstIsoString(to),
+                interval: 'hour'
             }
         }
     );

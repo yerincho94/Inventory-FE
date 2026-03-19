@@ -1,6 +1,9 @@
+import type {IngredientUnit} from "@/types/reference/ingredient";
+
 export interface StockAnalyticResponse {
     ingredientId: number;
     ingredientName: string;
+    unit: IngredientUnit;
 
     // 재고 정보
     currentQuantity: number;

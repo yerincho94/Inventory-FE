@@ -26,6 +26,7 @@ const REASON_MAP: Record<DisposalReason, { label: string }> = {
 export default function DisposalPage() {
     const storePublicId = requireStorePublicId();
 
+    // --- [메인 리스트 상태] ---
     const [mainData, setMainData] = useState<PageResponse<DisposalResponse> | null>(null);
     const [mainPage, setMainPage] = useState(0);
     const [isMainLoading, setIsMainLoading] = useState(false);
@@ -34,6 +35,7 @@ export default function DisposalPage() {
         reason: undefined,
     });
 
+    // --- [모달 및 폼 상태] ---
     const [isMainModalOpen, setIsMainModalOpen] = useState(false);
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
@@ -43,6 +45,7 @@ export default function DisposalPage() {
         {stockBatchId: "", quantity: 0, reason: "EXPIRED", wasteDate: new Date().toISOString(), ingredientName: ""},
     ]);
 
+    // --- [재고 검색(서브 모달) 상태] ---
     const [stockSearchTerm, setStockSearchTerm] = useState("");
     const [summaryItems, setSummaryItems] = useState<StockSummaryResponse[]>([]);
     const [summaryPage, setSummaryPage] = useState(0);
@@ -51,8 +54,9 @@ export default function DisposalPage() {
 
     const [selectedIngredient, setSelectedIngredient] = useState<StockSummaryResponse | null>(null);
     const [batchItems, setBatchItems] = useState<StockBatchResponse[]>([]);
-    const [isBatchLoading, setIsBatchLoading] = useState(false); // isBatchLoading 확인
+    const [isBatchLoading, setIsBatchLoading] = useState(false);
 
+    // --- [API 호출 함수] ---
     const fetchMainRecords = async () => {
         setIsMainLoading(true);
         try {
@@ -93,6 +97,7 @@ export default function DisposalPage() {
         }
     };
 
+    // --- [Effect] ---
     useEffect(() => {
         fetchMainRecords();
     }, [mainPage, mainCondition, storePublicId]);
@@ -118,6 +123,7 @@ export default function DisposalPage() {
         if (summaryPage > 0) fetchStockSummaries(false);
     }, [summaryPage, fetchStockSummaries]);
 
+    // --- [Handler] ---
     const handleRecordWaste = async () => {
         if (!items.every(i => i.stockBatchId && i.quantity > 0)) {
             alert("품목과 수량을 모두 확인해주세요.");
@@ -165,8 +171,9 @@ export default function DisposalPage() {
         }
     };
 
-    if (isMainLoading) {
-        return <Loading />;
+    // 1. 초기 진입 시 데이터가 아예 없을 때만 전체 로딩창 노출
+    if (isMainLoading && !mainData) {
+        return <Loading/>;
     }
 
     return (
@@ -174,11 +181,9 @@ export default function DisposalPage() {
             <div className="mx-auto w-full max-w-7xl px-6 py-10">
                 <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm">
-
-                        </div>
-                        <h1 className="text-4xl font-black tracking-tight text-gray-900"><Package
-                            className="h-10 w-10"/>폐기 관리</h1>
+                        <h1 className="text-4xl font-black tracking-tight text-gray-900 flex items-center gap-3">
+                            <Package className="h-10 w-10 text-black"/> 폐기 관리
+                        </h1>
                     </div>
                     <button
                         onClick={() => setIsMainModalOpen(true)}
@@ -188,9 +193,11 @@ export default function DisposalPage() {
                     </button>
                 </div>
 
+                {/* 검색 필터 영역 */}
                 <div className="mb-6 flex items-center gap-4">
                     <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5"/>
+                        <Search
+                            className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors ${isMainLoading ? 'text-black animate-pulse' : 'text-gray-400'}`}/>
                         <input
                             type="text"
                             placeholder="품목명을 입력하여 검색하세요"
@@ -200,8 +207,17 @@ export default function DisposalPage() {
                     </div>
                 </div>
 
-                <div className="bg-white border border-gray-100 rounded-[32px] shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
+                {/* 폐기 내역 테이블 영역 */}
+                <div className="bg-white border border-gray-100 rounded-[32px] shadow-sm overflow-hidden relative">
+                    {/* 상단 얇은 프로그레스 바 (검색 시 시각적 피드백) */}
+                    {isMainLoading && (
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gray-50 overflow-hidden z-10">
+                            <div className="h-full bg-black animate-[loading_1.5s_infinite_linear] w-1/3"></div>
+                        </div>
+                    )}
+
+                    <div
+                        className={`overflow-x-auto transition-opacity duration-200 ${isMainLoading ? 'opacity-50' : 'opacity-100'}`}>
                         <table className="w-full text-left text-[13px]">
                             <thead className="bg-gray-50/50 border-b border-gray-50">
                             <tr className="text-gray-400 font-black uppercase tracking-widest">
@@ -213,7 +229,7 @@ export default function DisposalPage() {
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                            {mainData?.content.length === 0 ? (
+                            {mainData?.content.length === 0 && !isMainLoading ? (
                                 <tr>
                                     <td colSpan={5} className="py-24 text-center">
                                         <div className="flex flex-col items-center gap-3 text-gray-300">
@@ -227,13 +243,13 @@ export default function DisposalPage() {
                                     <tr key={item.wastePublicId} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-8 py-6 text-gray-400 font-bold">{new Date(item.wasteAt).toLocaleDateString()}</td>
                                         <td className="px-8 py-6 font-black text-gray-900">{item.ingredientName}</td>
-                                        <td className="px-8 py-6 text-right font-black text-gray-600">{item.quantity} EA</td>
+                                        <td className="px-8 py-6 text-right font-black text-gray-600">{item.quantity} {item.unit}</td>
                                         <td className="px-8 py-6 text-right font-black text-red-500">-
                                             ₩{item.amount.toLocaleString()}</td>
                                         <td className="px-8 py-6 text-center">
                                                 <span
                                                     className="px-3 py-1 rounded-full text-[10px] font-black bg-white border border-gray-200 text-gray-500 shadow-sm">
-                                                    {REASON_MAP[item.reason]?.label}
+                                                    {REASON_MAP[item.wasteReason]?.label}
                                                 </span>
                                         </td>
                                     </tr>
@@ -242,6 +258,7 @@ export default function DisposalPage() {
                             </tbody>
                         </table>
                     </div>
+
                     {/* 페이지네이션 */}
                     <div className="px-8 py-6 bg-gray-50/30 border-t border-gray-50 flex items-center justify-between">
                         <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
@@ -249,16 +266,16 @@ export default function DisposalPage() {
                         </span>
                         <div className="flex gap-2">
                             <button
-                                disabled={mainPage === 0}
+                                disabled={mainPage === 0 || isMainLoading}
                                 onClick={() => setMainPage(p => p - 1)}
-                                className="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-30 hover:bg-gray-50"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-30 hover:bg-gray-50 transition-all shadow-sm"
                             >
                                 <ChevronLeft className="h-5 w-5"/>
                             </button>
                             <button
-                                disabled={!mainData?.hasNext}
+                                disabled={!mainData?.hasNext || isMainLoading}
                                 onClick={() => setMainPage(p => p + 1)}
-                                className="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-30 hover:bg-gray-50"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white disabled:opacity-30 hover:bg-gray-50 transition-all shadow-sm"
                             >
                                 <ChevronRight className="h-5 w-5"/>
                             </button>
@@ -267,7 +284,7 @@ export default function DisposalPage() {
                 </div>
             </div>
 
-            {/* [메인 중앙 팝업 모달] */}
+            {/* [메인 중앙 팝업 모달] - 기존과 동일 */}
             {isMainModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md"
@@ -288,7 +305,7 @@ export default function DisposalPage() {
                         <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-[#F8F9FB]">
                             {items.map((item, index) => (
                                 <div key={index}
-                                     className="p-6 bg-white border border-gray-100 rounded-[24px] shadow-sm relative space-y-5">
+                                     className="p-6 bg-white border border-gray-100 rounded-[24px] shadow-sm relative space-y-5 transition-all">
                                     <button onClick={() => setItems(items.filter((_, i) => i !== index))}
                                             className="absolute top-6 right-6 text-gray-300 hover:text-red-500 p-1">
                                         <Trash2 className="h-5 w-5"/>
@@ -359,7 +376,7 @@ export default function DisposalPage() {
                 </div>
             )}
 
-            {/* [서브 재고 검색 팝업] */}
+            {/* [서브 재고 검색 팝업] - 기존 로직 유지 */}
             {isStockModalOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeStockModal}/>
@@ -377,7 +394,8 @@ export default function DisposalPage() {
                             </div>
                             {!selectedIngredient && (
                                 <div className="relative mt-6">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 h-5 w-5"/>
+                                    <Search
+                                        className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 transition-colors ${isSummaryLoading ? 'text-black animate-pulse' : 'text-gray-300'}`}/>
                                     <input type="text" placeholder="어떤 재료를 찾으시나요?"
                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-black outline-none focus:bg-white transition-all shadow-inner"
                                            value={stockSearchTerm} onChange={(e) => setStockSearchTerm(e.target.value)}
@@ -413,8 +431,6 @@ export default function DisposalPage() {
                                             <ChevronRight className="h-5 w-5 text-gray-200 group-hover:text-black"/>
                                         </div>
                                     ))}
-
-                                    {/* 데이터가 없고 로딩 중이 아닐 때 */}
                                     {!isSummaryLoading && summaryItems.length === 0 && (
                                         <div
                                             className="py-20 text-center flex flex-col items-center gap-3 text-gray-300">
@@ -422,13 +438,11 @@ export default function DisposalPage() {
                                             <p className="font-bold">검색 결과가 없습니다.</p>
                                         </div>
                                     )}
-
-                                    {/* 무한 스크롤 로딩바: 추가 데이터가 있을 때만 표시 */}
-                                    {isSummaryLoading && hasMoreSummary && (
+                                    {isSummaryLoading && (
                                         <div className="py-6 flex justify-center items-center gap-2">
                                             <div
                                                 className="w-5 h-5 border-2 border-gray-200 border-t-black rounded-full animate-spin"></div>
-                                            <span className="text-xs font-bold text-gray-400">목록을 불러오는 중...</span>
+                                            <span className="text-xs font-bold text-gray-400">불러오는 중...</span>
                                         </div>
                                     )}
                                 </>
@@ -446,23 +460,18 @@ export default function DisposalPage() {
                                                     </div>
                                                     <div>
                                                         <div
-                                                            className="text-[10px] font-black text-red-500 uppercase tracking-widest">
-                                                            유통기한: {batch.expirationDate}
-                                                        </div>
+                                                            className="text-[10px] font-black text-red-500 uppercase tracking-widest">유통기한: {batch.expirationDate}</div>
                                                         <div
                                                             className="text-sm font-black text-gray-900 mt-1">{batch.rawProductName}</div>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-lg font-black text-indigo-600">
-                                                        {batch.remainingQuantity} {selectedIngredient?.unit}
-                                                    </div>
+                                                    <div
+                                                        className="text-lg font-black text-indigo-600">{batch.remainingQuantity} {selectedIngredient?.unit}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
-
-                                    {/* 배치 로딩 (배치는 보통 한 번에 가져오므로 단순 로더 적용) */}
                                     {isBatchLoading && (
                                         <div className="py-20 flex justify-center">
                                             <div

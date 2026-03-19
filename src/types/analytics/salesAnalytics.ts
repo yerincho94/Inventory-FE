@@ -1,4 +1,4 @@
-export type TimeInterval = 'day' | 'week' | 'month';
+export type TimeInterval = 'day' | 'week' | 'month' | 'hour';
 
 // 1. 매출 추이 (Trend)
 export interface SalesTrendData {

@@ -163,6 +163,18 @@ export default function ReportGeneratePage() {
                 {/* ── 데이터 영역 ── */}
                 {summaryData && (
                     <>
+                        {/* PDF 다운로드 버튼 */}
+                        <div className="flex justify-end mb-6">
+                            <button
+                                onClick={handleDownload}
+                                disabled={isDownloading}
+                                className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <Download className="w-4 h-4" />
+                                {isDownloading ? 'PDF 생성 중...' : 'PDF 다운로드'}
+                            </button>
+                        </div>
+
                         {/* KPI 카드 4개 */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                             <KPICard
@@ -283,18 +295,6 @@ export default function ReportGeneratePage() {
                                     </div>
                                 )}
                             </div>
-                        </div>
-
-                        {/* PDF 다운로드 버튼 */}
-                        <div className="flex justify-end">
-                            <button
-                                onClick={handleDownload}
-                                disabled={isDownloading}
-                                className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                <Download className="w-4 h-4" />
-                                {isDownloading ? 'PDF 생성 중...' : 'PDF 다운로드'}
-                            </button>
                         </div>
                     </>
                 )}

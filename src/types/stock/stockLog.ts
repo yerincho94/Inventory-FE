@@ -1,3 +1,5 @@
+import type {IngredientUnit} from "@/types/reference/ingredient";
+
 export type TransactionType = "INBOUND" | "DEDUCTION" | "WASTE" | "ADJUST";
 export type ReferenceType = "INBOUND" | "SALE" | "WASTE" | "STOCK_TAKING" | "OTHER"
 
@@ -15,6 +17,7 @@ export interface StockLogResponse {
     batchId?: string;
     type?: TransactionType | undefined;
     changeQuantity?: number;
+    unit?: IngredientUnit;
     balanceAfter?: number;
     referenceType?: ReferenceType;
     referenceId?: number;
