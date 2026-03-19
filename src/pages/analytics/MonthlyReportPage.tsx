@@ -222,7 +222,7 @@ export default function MonthlyReportPage() {
                                                     axisLine={false}
                                                     tickLine={false}
                                                     tick={{ fontSize: 12, fill: '#64748b' }}
-                                                    tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}천`}
+                                                    tickFormatter={(v: number) => `${(v / 10000).toFixed(0)}만`}
                                                 />
                                                 <Tooltip
                                                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
