@@ -109,7 +109,7 @@ export default function StockAnalyticsPage() {
 
                     {/* 재고 부족 */}
                     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-xs font-black text-gray-400 uppercase mb-4">재고 순위</h3>
+                        <h3 className="text-xs font-black text-gray-400 uppercase mb-4">재고 목록</h3>
                         <div className="h-[280px]">
                             <StockLevelChart data={data}/>
                         </div>

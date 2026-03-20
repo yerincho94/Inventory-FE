@@ -266,6 +266,29 @@ const DashboardPage = () => {
     const [hourlyTrend, setHourlyTrend] = useState<SalesTrendData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const expiryAlertList = useMemo(() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // 비교를 위해 시간 정규화
+
+        return stockAnalysis
+            .filter(item => item.minExpirationDate) // 유통기한 정보가 있는 것만
+            .map(item => {
+                const expDate = new Date(item.minExpirationDate!);
+                expDate.setHours(0, 0, 0, 0);
+
+                // 일수 차이 계산 (D-Day)
+                const diffTime = expDate.getTime() - now.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                return {...item, diffDays};
+            })
+            // 1. 이미 지난 것(음수) 우선 정렬, 2. 임박한 순서(작은 수) 정렬
+            .sort((a, b) => a.diffDays - b.diffDays)
+            // 7일 이내이거나 이미 지난 항목만 필터링
+            .filter(item => item.diffDays <= 7)
+            .slice(0, 5);
+    }, [stockAnalysis]);
+
     useEffect(() => {
         let pollingId: ReturnType<typeof setInterval> | null = null;
         let storeId: string | null = null;
@@ -409,7 +432,7 @@ const DashboardPage = () => {
 
                     <div className="rounded-3xl bg-white p-8 shadow-sm border border-gray-100">
                         <h3 className="text-xl font-black text-gray-900 mb-8 flex items-center gap-2"><BarChart3
-                            className="h-5 w-5 text-indigo-500"/> 재고 Top 5</h3>
+                            className="h-5 w-5 text-indigo-500"/> 재고량 하위 5</h3>
                         <StockLevelChart data={stockAnalysis}/>
                     </div>
 
@@ -420,28 +443,52 @@ const DashboardPage = () => {
                     </div>
 
                     {/* 알림 카드 */}
-                    <div className="rounded-3xl bg-black p-8 shadow-lg text-white flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center gap-2 mb-4">
-                                <Info className="h-8 w-8 text-indigo-400"/>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Smart Tip</span>
-                            </div>
-                            <h3 className="text-xl font-black mb-2">재고 최적화 알림</h3>
-                            <p className="text-gray-400 text-sm leading-relaxed">
-                                유통기한 초과 및 임박(3일 이내) 항목이 <span className="text-red-400 font-bold">
-                                {stockAnalysis.filter(i => {
-                                    if (!i.minExpirationDate) return false;
-                                    // 현재 시간과 유통기한의 차이 계산
-                                    const diff = new Date(i.minExpirationDate).getTime() - new Date().getTime();
-                                    // 3일(밀리초) 이하인 모든 항목 (음수 포함 = 이미 지남)
-                                    return diff <= (3 * 24 * 60 * 60 * 1000);
-                                }).length}건
-                            </span> 확인되었습니다. <br/>
-                                <span className="text-xs text-red-300/80 font-medium">
-                                * 유통기한이 지난 품목은 즉시 폐기 여부를 확인하세요.
-                            </span>
-                            </p>
+                    <div className="rounded-3xl bg-black p-8 shadow-lg text-white flex flex-col h-full">
+                        <div className="flex items-center gap-2 mb-6">
+                            <Info className="h-6 w-6 text-indigo-400"/>
+                            <span
+                                className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Smart Tip</span>
                         </div>
+
+                        <h3 className="text-xl font-black mb-4">재고 최적화 알림</h3>
+
+                        {expiryAlertList.length > 0 ? (
+                            <div className="space-y-4 flex-1">
+                                <p className="text-gray-400 text-sm mb-4">
+                                    관리가 필요한 품목이 <span
+                                    className="text-red-400 font-bold">{expiryAlertList.length}건</span> 확인되었습니다.
+                                </p>
+                                <div className="space-y-3">
+                                    {expiryAlertList.map((item, idx) => (
+                                        <div key={idx}
+                                             className="flex items-center justify-between border-b border-white/10 pb-3">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-sm font-bold text-white truncate max-w-[140px]">
+                                                    {item.ingredientName}
+                                                </span>
+                                                <span className="text-[11px] text-gray-500 font-medium">
+                                                    재고: {item.currentQuantity} {item.unit}
+                                                </span>
+                                            </div>
+                                            <div className={`text-[11px] font-black px-2.5 py-1.5 rounded-xl ${
+                                                item.diffDays < 0
+                                                    ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
+                                                    : 'bg-indigo-500/20 text-indigo-300 ring-1 ring-indigo-500/30'
+                                            }`}>
+                                                {item.diffDays < 0
+                                                    ? `${Math.abs(item.diffDays)}일 지남`
+                                                    : item.diffDays === 0 ? '오늘 만료' : `${item.diffDays}일 남음`}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                현재 유통기한 이슈가 있는 품목이 없습니다. <br/>
+                                매우 청결하게 관리되고 있네요!
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
