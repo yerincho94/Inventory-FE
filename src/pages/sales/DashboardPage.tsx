@@ -455,9 +455,9 @@ const DashboardPage = () => {
                                 <div className="space-y-3">
                                     {expiryAlertList.map((item, idx) => (
                                         <div key={idx}
-                                             className="flex items-center justify-between border-b border-white/10 pb-3">
+                                             className="flex items-center justify-between border-b border-black/10 pb-3">
                                             <div className="flex flex-col gap-0.5">
-                                                <span className="text-sm font-bold text-white truncate max-w-[140px]">
+                                                <span className="text-sm font-bold text-black truncate max-w-[140px]">
                                                     {item.ingredientName}
                                                 </span>
                                                 <span className="text-[11px] text-gray-500 font-medium">
