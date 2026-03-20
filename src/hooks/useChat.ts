@@ -18,6 +18,54 @@ const buildThreadTitle = (content: string) => {
   return normalized.length > 24 ? `${normalized.slice(0, 24)}...` : normalized;
 };
 
+const sortMessages = (items: ChatMessage[]) => (
+  [...items].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  )
+);
+
+const isSameMessage = (left: ChatMessage, right: ChatMessage) => {
+  if (left.messageId > 0 && right.messageId > 0) {
+    return left.messageId === right.messageId;
+  }
+
+  return !!left.clientMessageId && left.clientMessageId === right.clientMessageId;
+};
+
+const upsertMessage = (items: ChatMessage[], incoming: ChatMessage) => {
+  let matched = false;
+
+  const next = items.map((message) => {
+    if (!isSameMessage(message, incoming)) {
+      return message;
+    }
+
+    matched = true;
+    return {
+      ...message,
+      ...incoming,
+      messageId: incoming.messageId > 0 ? incoming.messageId : message.messageId,
+      clientMessageId: incoming.clientMessageId ?? message.clientMessageId,
+      errorMessage: incoming.errorMessage ?? message.errorMessage ?? null,
+    };
+  });
+
+  return sortMessages(matched ? next : [...next, incoming]);
+};
+
+const mergeServerSnapshot = (localMessages: ChatMessage[], serverMessages: ChatMessage[]) => {
+  let merged = sortMessages(serverMessages);
+
+  for (const localMessage of localMessages) {
+    const exists = merged.some((serverMessage) => isSameMessage(serverMessage, localMessage));
+    if (!exists && localMessage.messageId < 0) {
+      merged = upsertMessage(merged, localMessage);
+    }
+  }
+
+  return sortMessages(merged);
+};
+
 export const useChat = () => {
   const [threads, setThreads] = useState<ChatThreadSummary[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
@@ -59,13 +107,10 @@ export const useChat = () => {
     setIsLoadingMessages(true);
     try {
       const response = await getChatMessages(threadId);
-      const sortedMessages = [...response.data].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-      setMessages(sortedMessages);
+      const sortedMessages = sortMessages(response.data);
+      setMessages((prev) => mergeServerSnapshot(prev, sortedMessages));
     } catch (error) {
       console.error('Failed to load messages:', error);
-      setMessages([]);
     } finally {
       setIsLoadingMessages(false);
     }
@@ -119,26 +164,24 @@ export const useChat = () => {
         const clientMessageId = event.clientMessageId;
 
         if (typeof requestMessageId === 'number' && clientMessageId) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.clientMessageId === clientMessageId && msg.messageId < 0
-                ? { ...msg, messageId: requestMessageId, status: 'QUEUED' }
-                : msg,
-            ),
-          );
+          setMessages((prev) => sortMessages(
+            prev.map((message) => (
+              message.clientMessageId === clientMessageId && message.messageId < 0
+                ? { ...message, messageId: requestMessageId, status: 'QUEUED' }
+                : message
+            )),
+          ));
         }
         break;
       }
 
       case 'CHAT_PROCESSING':
         if (event.requestMessageId) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.messageId === event.requestMessageId
-                ? { ...msg, status: 'PROCESSING' as const }
-                : msg,
-            ),
-          );
+          setMessages((prev) => prev.map((message) => (
+            message.messageId === event.requestMessageId
+              ? { ...message, status: 'PROCESSING' as const }
+              : message
+          )));
         }
         break;
 
@@ -148,15 +191,15 @@ export const useChat = () => {
 
         if (responseMessage) {
           setMessages((prev) => {
-            const updated = typeof requestMessageId === 'number'
-              ? prev.map((msg) =>
-                  msg.messageId === requestMessageId
-                    ? { ...msg, status: 'COMPLETED' as const }
-                    : msg,
-                )
+            const completed = typeof requestMessageId === 'number'
+              ? prev.map((message) => (
+                message.messageId === requestMessageId
+                  ? { ...message, status: 'COMPLETED' as const }
+                  : message
+              ))
               : prev;
 
-            return [...updated, responseMessage];
+            return upsertMessage(completed, responseMessage);
           });
           void loadThreads();
         }
@@ -165,25 +208,35 @@ export const useChat = () => {
 
       case 'CHAT_FAILED':
         if (event.requestMessageId) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.messageId === event.requestMessageId
-                ? {
-                  ...msg,
-                  status: 'FAILED' as const,
-                  errorMessage: event.errorMessage || '오류가 발생했습니다',
-                }
-                : msg,
-            ),
-          );
+          setMessages((prev) => prev.map((message) => (
+            message.messageId === event.requestMessageId
+              ? {
+                ...message,
+                status: 'FAILED' as const,
+                errorMessage: event.errorMessage || '오류가 발생했습니다',
+              }
+              : message
+          )));
         }
         break;
     }
   }, [loadThreads]);
 
+  const handleConnectionChange = useCallback((status: ConnectionStatus) => {
+    setConnectionStatus(status);
+
+    if (status === 'CONNECTED') {
+      void loadThreads();
+      const currentThreadId = selectedThreadIdRef.current;
+      if (currentThreadId) {
+        void loadMessages(currentThreadId);
+      }
+    }
+  }, [loadMessages, loadThreads]);
+
   const { sendMessage } = useChatSocket({
     onEvent: handleRealtimeEvent,
-    onConnectionChange: setConnectionStatus,
+    onConnectionChange: handleConnectionChange,
   });
 
   const sendChatMessageByThreadId = useCallback((threadId: number, content: string) => {
@@ -203,7 +256,7 @@ export const useChat = () => {
       createdAt: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessages((prev) => upsertMessage(prev, optimisticMessage));
 
     sendMessage({
       threadId,
@@ -239,13 +292,11 @@ export const useChat = () => {
         return;
       }
 
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.messageId === message.messageId
-            ? { ...msg, status: 'QUEUED', errorMessage: null }
-            : msg,
-        ),
-      );
+      setMessages((prev) => prev.map((current) => (
+        current.messageId === message.messageId
+          ? { ...current, status: 'QUEUED', errorMessage: null }
+          : current
+      )));
 
       sendMessage({
         threadId: message.threadId,
@@ -256,13 +307,9 @@ export const useChat = () => {
     [sendMessage],
   );
 
-  const selectThread = useCallback(
-    (threadId: number) => {
-      setSelectedThreadId(threadId);
-      void loadMessages(threadId);
-    },
-    [loadMessages],
-  );
+  const selectThread = useCallback((threadId: number) => {
+    setSelectedThreadId(threadId);
+  }, []);
 
   useEffect(() => {
     void loadThreads();
