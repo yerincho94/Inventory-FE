@@ -130,7 +130,7 @@ export const ChatPage = () => {
 
         <ChatComposer
           onSend={handleSendMessage}
-          disabled={isProcessing || connectionStatus !== 'CONNECTED'}
+          disabled={connectionStatus === 'DISCONNECTED'}
         />
       </div>
     </div>
