@@ -112,15 +112,6 @@ export default function StockPage() {
                                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                             />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="zeroStock"
-                                checked={condition.includeZeroStock}
-                                onChange={(e) => setCondition(prev => ({...prev, includeZeroStock: e.target.checked}))}
-                                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
-                            />
-                        </div>
                     </div>
 
                     <div className="mt-6 flex gap-2">
