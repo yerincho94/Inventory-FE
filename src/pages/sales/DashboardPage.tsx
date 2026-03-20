@@ -8,7 +8,7 @@ import type {StockAnalyticResponse} from '@/types/analytics/stockAnalytics.ts';
 import {
     TrendingUp, Users, Calendar,
     AlertTriangle, Clock, BarChart3, Trash2,
-    Store, ShoppingBag, Info
+    Store, ShoppingBag
 } from 'lucide-react';
 import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -443,13 +443,7 @@ const DashboardPage = () => {
                     </div>
 
                     {/* 알림 카드 */}
-                    <div className="rounded-3xl bg-black p-8 shadow-lg text-white flex flex-col h-full">
-                        <div className="flex items-center gap-2 mb-6">
-                            <Info className="h-6 w-6 text-indigo-400"/>
-                            <span
-                                className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Smart Tip</span>
-                        </div>
-
+                    <div className="rounded-3xl bg-white p-8 shadow-sm text-gray-900 flex flex-col h-full">
                         <h3 className="text-xl font-black mb-4">재고 최적화 알림</h3>
 
                         {expiryAlertList.length > 0 ? (
