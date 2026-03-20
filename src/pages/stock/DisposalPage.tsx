@@ -455,6 +455,23 @@ export default function DisposalPage() {
                                                                                                         value={key}>{val.label}</option>)}
                                             </select>
                                         </div>
+
+                                        {/* 2. 폐기 날짜 선택 (새로 추가) */}
+                                        <div className="space-y-2">
+                                            <label
+                                                className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">폐기
+                                                날짜</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="date"
+                                                    // "YYYY-MM-DD" 형식으로 변환하여 value 부여
+                                                    value={item.wasteDate ? item.wasteDate.split('T')[0] : new Date().toISOString().split('T')[0]}
+                                                    max={new Date().toISOString().split('T')[0]} // 미래 날짜 선택 방지
+                                                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-[13px] font-black outline-none focus:bg-white focus:border-black transition-all cursor-pointer"
+                                                    onChange={(e) => updateItem(index, 'wasteDate', new Date(e.target.value).toISOString())}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
