@@ -8,7 +8,7 @@ import {
     type StompSubscription,
 } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { ensureAccessToken } from '@/api/user/client';
+import { ensureAccessToken } from '@/utils/auth';
 import type {
     ChatRealtimeEvent,
     ChatSendMessageRequest,
