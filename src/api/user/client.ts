@@ -5,9 +5,9 @@ import axios, {
 } from 'axios';
 import {
     getAccessToken,
-    setAccessToken,
     removeAccessToken,
     extractToken,
+    reissue,
 } from '@/utils/auth.ts';
 import type { ApiResponse } from '@/types/common/common.ts';
 
@@ -19,13 +19,7 @@ const resolveApiBaseUrl = (): string => {
     const hostname = window.location.hostname;
     const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
 
-    if (isLocal) {
-        // 로컬에서는 nginx가 프록시하므로 빈 문자열 (같은 origin)
-        return '';
-    }
-
-    // 운영에서는 API 서버 URL
-    return import.meta.env.VITE_API_BASE_URL || '';
+    return isLocal ? '' : (import.meta.env.VITE_API_BASE_URL || '');
 };
 
 const apiBaseUrl = resolveApiBaseUrl();
@@ -39,33 +33,8 @@ const apiClient = axios.create({
     withCredentials: true,
 });
 
-const refreshClient = axios.create({
-    baseURL: apiBaseUrl,
-    timeout: 70000,
-    withCredentials: true,
-});
-
-let isRefreshing = false;
-let failedQueue: Array<{
-    resolve: (token: string | null) => void;
-    reject: (error: unknown) => void;
-}> = [];
-
-const processQueue = (error: unknown, token: string | null = null) => {
-    failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(token);
-        }
-    });
-    failedQueue = [];
-};
-
 function normalizeToken(token: string | null | undefined): string | null {
-    if (!token) return null;
-    const extracted = extractToken(token);
-    return extracted ? extracted.replace(/^"(.*)"$/, '$1') : null;
+    return extractToken(token);
 }
 
 function isApiResponseEnvelope<T>(data: unknown): data is ApiResponse<T> {
@@ -96,48 +65,6 @@ function unwrapApiResponse<T>(
 
     return response as AxiosResponse<T>;
 }
-
-export const reissueAccessToken = async (): Promise<string | null> => {
-    if (isRefreshing) {
-        return new Promise<string | null>((resolve, reject) => {
-            failedQueue.push({ resolve, reject });
-        });
-    }
-
-    isRefreshing = true;
-
-    try {
-        const response = await refreshClient.post('/api/auth/reissue');
-        const headerToken =
-            response.headers['authorization'] || response.headers['Authorization'];
-
-        const newAccessToken = normalizeToken(headerToken);
-
-        if (!newAccessToken) {
-            throw new Error('재발급 응답 헤더에 access token 이 없습니다.');
-        }
-
-        setAccessToken(newAccessToken);
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-
-        processQueue(null, newAccessToken);
-        return newAccessToken;
-    } catch (refreshError) {
-        processQueue(refreshError, null);
-        removeAccessToken();
-        return null;
-    } finally {
-        isRefreshing = false;
-    }
-};
-
-export const ensureAccessToken = async (): Promise<string | null> => {
-    const currentToken = normalizeToken(getAccessToken());
-    if (currentToken) {
-        return currentToken;
-    }
-    return reissueAccessToken();
-};
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const token = normalizeToken(getAccessToken());
@@ -170,7 +97,7 @@ apiClient.interceptors.response.use(
 
             originalRequest._retry = true;
 
-            const newAccessToken = await reissueAccessToken();
+            const newAccessToken = await reissue();
 
             if (!newAccessToken) {
                 removeAccessToken();

@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { getAccessToken } from "../utils/auth";
+import { getAccessToken, ensureAccessToken } from "../utils/auth";
 import { NotificationProvider } from "../contexts/NotificationContext";
 import MainLayout from "./layout/MainLayout";
 import StoreGuard from "./layout/StoreGuard";
@@ -69,7 +70,30 @@ import ChatPage from "../pages/chat/ChatPage";
 import NotFoundPage from "@/pages/common/NotFoundPage";
 
 export default function AppRouter() {
-    const isAuthed = !!getAccessToken();
+    const [isInitialized, setIsInitialized] = useState(false);
+    const [isAuthed, setIsAuthed] = useState(!!getAccessToken());
+
+    useEffect(() => {
+        const initializeAuth = async () => {
+            const token = await ensureAccessToken();
+            setIsAuthed(!!token);
+            setIsInitialized(true);
+        };
+        
+        initializeAuth();
+
+        const handleAuthChange = () => {
+            setIsAuthed(!!getAccessToken());
+        };
+
+        window.addEventListener('auth:change', handleAuthChange);
+        return () => window.removeEventListener('auth:change', handleAuthChange);
+    }, []);
+
+    if (!isInitialized) {
+        // 초기화 중일 때 아무것도 렌더링하지 않거나 로딩 컴포넌트를 표시합니다.
+        return null; 
+    }
 
     return (
         <BrowserRouter>

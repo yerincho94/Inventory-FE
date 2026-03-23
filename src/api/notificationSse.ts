@@ -1,5 +1,5 @@
 import { fetchEventSource } from '@microsoft/fetch-event-source';
-import { ensureAccessToken, reissueAccessToken } from '@/api/user/client.ts';
+import { ensureAccessToken, reissue } from '@/utils/auth.ts';
 import type { NotificationResponse } from '@/types/notification.ts';
 
 interface SSEConnectionOptions {
@@ -134,7 +134,7 @@ export function connectNotificationStream(
             }
 
             if (errorObj.message === 'SSE_UNAUTHORIZED') {
-                const newToken = await reissueAccessToken();
+                const newToken = await reissue();
 
                 if (!newToken) {
                     onError?.(new Error('SSE 재인증 실패'));
