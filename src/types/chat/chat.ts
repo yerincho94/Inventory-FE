@@ -1,23 +1,18 @@
-// 챗봇 메시지 역할
 export type ChatMessageRole = 'USER' | 'ASSISTANT' | 'SYSTEM' | 'TOOL';
-
-// 챗봇 메시지 상태
-export type ChatMessageStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-
-// 챗봇 스레드 상태
+export type ChatMessageStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'INTERRUPTED';
 export type ChatThreadStatus = 'ACTIVE' | 'ARCHIVED';
+export type ChatModelPreference = 'AUTO' | 'FLASH' | 'REASONING';
+export type ChatInterruptStrategy = 'AUTO' | 'ENQUEUE' | 'INTERRUPT_CURRENT';
 
-// 실시간 이벤트 타입
 export type ChatRealtimeEventType =
   | 'USER_MESSAGE_ACCEPTED'
   | 'CHAT_PROCESSING'
   | 'CHAT_RESPONSE_CREATED'
-  | 'CHAT_FAILED';
+  | 'CHAT_FAILED'
+  | 'CHAT_INTERRUPTED';
 
-// 연결 상태
 export type ConnectionStatus = 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED';
 
-// 챗봇 메시지
 export interface ChatMessage {
   messageId: number;
   threadId: number;
@@ -28,10 +23,10 @@ export interface ChatMessage {
   replyToMessageId?: number | null;
   model?: string | null;
   errorMessage?: string | null;
+  requestedModelPreference?: ChatModelPreference | null;
   createdAt: string;
 }
 
-// 챗봇 스레드 요약
 export interface ChatThreadSummary {
   threadId: number;
   title: string;
@@ -41,7 +36,6 @@ export interface ChatThreadSummary {
   createdAt: string;
 }
 
-// 챗봇 스레드 생성 응답
 export interface ChatThreadCreateResponse {
   threadId: number;
   title: string;
@@ -49,7 +43,6 @@ export interface ChatThreadCreateResponse {
   createdAt: string;
 }
 
-// 챗봇 실시간 이벤트
 export interface ChatRealtimeEvent {
   eventType: ChatRealtimeEventType;
   threadId: number;
@@ -61,14 +54,18 @@ export interface ChatRealtimeEvent {
   occurredAt: string;
 }
 
-// 챗봇 메시지 전송 요청
 export interface ChatSendMessageRequest {
   threadId: number;
   clientMessageId: string;
   content: string;
+  modelPreference?: ChatModelPreference;
+  interruptStrategy?: ChatInterruptStrategy;
 }
 
-// 챗봇 스레드 생성 요청
+export interface ChatInterruptRequest {
+  threadId: number;
+}
+
 export interface ChatCreateThreadRequest {
   title: string;
 }

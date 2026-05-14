@@ -3,13 +3,17 @@ import { Send } from 'lucide-react';
 
 interface ChatComposerProps {
   onSend: (message: string) => void;
+  onInterrupt?: () => void;
   disabled?: boolean;
+  isProcessing?: boolean;
   placeholder?: string;
 }
 
 export const ChatComposer = ({
   onSend,
+  onInterrupt: _onInterrupt,
   disabled = false,
+  isProcessing: _isProcessing = false,
   placeholder = '메시지를 입력하세요...',
 }: ChatComposerProps) => {
   const [input, setInput] = useState('');
@@ -17,16 +21,10 @@ export const ChatComposer = ({
 
   const handleSend = () => {
     const trimmed = input.trim();
-    if (!trimmed || disabled) {
-      return;
-    }
-
+    if (!trimmed || disabled) return;
     onSend(trimmed);
     setInput('');
-
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -38,7 +36,6 @@ export const ChatComposer = ({
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
-
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
@@ -47,7 +44,7 @@ export const ChatComposer = ({
   return (
     <div className="bg-white px-3 sm:px-6 pb-3 sm:pb-4">
       <div className="border-t border-gray-200 mb-3 sm:mb-4" />
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl space-y-3">
         <div className="flex items-end gap-2 sm:gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-2 sm:p-3 transition-all focus-within:border-sky-300 focus-within:ring-2 focus-within:ring-sky-100">
           <textarea
             ref={textareaRef}
