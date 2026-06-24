@@ -1,9 +1,31 @@
-# AIBE4 Final Project - Frontend
+# Inventory — Frontend
 
-React + TypeScript + Vite 기반 프론트엔드 애플리케이션
+> 외식업 재고·매출 운영 자동화 플랫폼 "인벤토리"의 프론트엔드 레포지토리
+📖 **전체 프로젝트 문서 / 백엔드**: [Inventory-BE](https://github.com/yerincho94/Inventory-BE)
 
----
+<br/>
 
+## 기술 스택
+
+![React](https://img.shields.io/badge/React%2018-61DAFB?style=flat-square&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![Axios](https://img.shields.io/badge/Axios-5A29E4?style=flat-square&logo=axios&logoColor=white)
+
+<br/>
+
+## 주요 화면
+
+- **실시간 매출 대시보드** — 30초 폴링 기반 실시간 매출, 시간대별 추이 차트
+  <img width="786" height="620" alt="image" src="https://github.com/user-attachments/assets/5f7780a7-24e6-4f94-a95b-f2e4a1f3c816" />
+
+- **매출 분석** — 피크타임 히트맵, 메뉴 랭킹, 전월 대비 성장률 시각화
+- 기준 정보 / 입고 / 재고 / 주문 / 리포트 관리 화면
+  <img width="786" height="620" alt="image" src="https://github.com/user-attachments/assets/c2978040-7083-4ef6-a546-505d81117f32" />
+
+<br/>
+
+## 로컬 실행 방법
 ## Local Run
 
 ### 사전 준비
@@ -61,39 +83,9 @@ docker compose up -d --build
 | Web App | http://localhost |
 | Swagger UI | http://localhost/api/swagger-ui/index.html |
 
-<br>
+<br/>
 
-## 팀 협업 컨벤션
-### 커밋 메시지 유형
+## 담당 (조예린)
 
-| 유형 | 의미 |
-|------|------|
-| `feat` | 새로운 기능 추가 |
-| `fix` | 버그 수정 |
-| `docs` | 문서 수정 |
-| `style` | 코드 formatting, 세미콜론 누락 등 |
-| `refactor` | 코드 리팩토링 |
-| `test` | 테스트 코드 추가 |
-| `chore` | 패키지 매니저 수정, 기타 수정 |
-| `design` | CSS 등 UI 디자인 변경 |
-| `comment` | 주석 추가 및 변경 |
-| `rename` | 파일/폴더명 수정 또는 이동 |
-| `remove` | 파일 삭제 |
-| `!breaking change` | 커다란 API 변경 |
-| `!hotfix` | 급한 버그 수정 |
-| `assets` | 에셋 파일 추가 |
-
-### 커밋 메시지 형식
-
-**제목:**
-```
-type : 커밋메시지
-```
-
-**내용:**
-```markdown
-### 작업 내용
-- 작업 내용 1
-- 작업 내용 2
-- 작업 내용 3
-```
+매출 분석 대시보드 및 실시간 매출(30초 폴링)·시간대별 추이 차트 화면 구현
+자세한 백엔드 기여 내용은 [Inventory-BE README](https://github.com/yerincho94/Inventory-BE)를 참고해 주세요.
